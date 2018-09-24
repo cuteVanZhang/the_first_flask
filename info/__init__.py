@@ -9,8 +9,8 @@ from redis import StrictRedis
 
 from config import config_dict
 
-db = None
-sr = None
+db = None  # type: SQLAlchemy
+sr = None  # type: StrictRedis
 
 
 def setup_log(config_name):
@@ -40,4 +40,6 @@ def creat_app(config_type):
     from .modules.home import home_blu
     app.register_blueprint(home_blu)
     setup_log(config_class.LOG_LEVEL)
+    # from .modes import *
+    import info.modes
     return app
