@@ -1,10 +1,10 @@
+import logging
 from datetime import timedelta
 
 from redis import StrictRedis
 
 
 class Config:
-    DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'mysql://root:mysql@127.0.0.1:3306/my_info'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REDIS_HOST = '127.0.0.1'
@@ -18,10 +18,12 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    LOG_LEVEL = logging.DEBUG
 
 
 class ProductConfig(Config):
     DEBUG = False
+    LOG_LEVEL = logging.ERROR
 
 
 config_dict = {
