@@ -9,6 +9,7 @@ from redis import StrictRedis
 
 from config import config_dict
 
+
 db = None  # type: SQLAlchemy
 sr = None  # type: StrictRedis
 
@@ -34,11 +35,15 @@ def creat_app(config_type):
     app.config.from_object(config_class)
     global db, sr
     db = SQLAlchemy(app)
-    sr = StrictRedis(host=config_class.REDIS_HOST, port=config_class.REDIS_PORT)
+    sr = StrictRedis(host=config_class.REDIS_HOST, port=config_class.REDIS_PORT, decode_responses=True)
     Session(app)
     Migrate(app, db)
+
     from .modules.home import home_blu
     app.register_blueprint(home_blu)
+    from info.modules.passport import passport_blu
+    app.register_blueprint(passport_blu)
+
     setup_log(config_class.LOG_LEVEL)
     # from .modes import *
     import info.modes
