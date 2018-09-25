@@ -1,3 +1,4 @@
+import random
 import re
 
 from flask import request, abort, jsonify, current_app, make_response, Response
@@ -62,8 +63,15 @@ def get_sms_code():
         return jsonify(error=RET.PARAMERR, errmsg='验证码错误')
 
     # 发送短信
+    sms_code = '%04d' % random.randint(0, 9999)
+    current_app.logger.info('短信验证码为:%s' % sms_code)
 
     # 保存短信验证码
+    try:
+        sr.set("img_code_id"+mobile, sms_code, ex=60)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回结果
     return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
