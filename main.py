@@ -5,8 +5,8 @@ from info import creat_app
 
 app = creat_app('dev')
 mgr = Manager(app)
-
 mgr.add_command('mc', MigrateCommand)
+
 
 if __name__ == '__main__':
     mgr.run()
