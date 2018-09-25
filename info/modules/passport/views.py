@@ -3,7 +3,8 @@ import re
 
 from flask import request, abort, jsonify, current_app, make_response, Response
 
-from info import sr
+from info import sr, db
+from info.modes import User
 from info.modules.passport import passport_blu
 from info.utils.captcha.pic_captcha import captcha
 
@@ -73,5 +74,49 @@ def get_sms_code():
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
 
+    # 返回结果
+    return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 注册
+@passport_blu.route('/register', methods=['GET', 'POST'])
+def register():
+    # 获取验证参数
+    mobile = request.json.get('mobile')
+    sms_code = request.json.get('sms_code')
+    password = request.json.get('password')
+
+    if not all([mobile, sms_code, password]):
+        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 验证手机号码格式是否正确
+    if not re.match(r'1[345789]\d{9}$', mobile):
+        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 根据手机号从数据库读取real_msm_code
+    try:
+        real_msm_code = sr.get("img_code_id"+mobile)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    # 验证短信验证码是否 过期/一致
+    if not real_msm_code:
+        return jsonify(error=RET.PARAMERR, errmsg='验证码过期')
+    if real_msm_code != sms_code.upper():
+        return jsonify(error=RET.PARAMERR, errmsg='验证码错误')
+
+    # 存储客户信息
+    user = User()
+    user.mobile = mobile
+    user.password_hash = password
+    user.nick_name = mobile
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except BaseException as e:
+        db.session.rollback()
+        current_app.logger.error(e)
+        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
     # 返回结果
     return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
