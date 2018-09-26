@@ -20,7 +20,7 @@ def get_img_code():
     img_code_id = request.args.get('img_code_id')
     if not img_code_id:
         # return abort(403)
-        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 获取图片
     img_name, img_text, img_bytes = captcha.generate_captcha()
@@ -29,8 +29,8 @@ def get_img_code():
     try:
         sr.set('img_code_id' + img_code_id, img_text, ex=180)
     except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回图片Bytes
     response = make_response(img_bytes)  # type: Response
@@ -46,34 +46,34 @@ def get_sms_code():
     img_code = request.json.get('img_code')
     img_code_id = request.json.get('img_code_id')
     if not all([mobile, img_code, img_code_id]):
-        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 验证手机号码格式是否正确
     if not re.match(r'1[345789]\d{9}$', mobile):
-        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 根据图片key,从数据库获取图片text
     try:
         real_img_code = sr.get('img_code_id' + img_code_id)
     except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 验证码和图片text 是否过期/一致
     if not real_img_code:
-        return jsonify(error=RET.PARAMERR, errmsg='验证码过期')
+        return jsonify(errno=RET.PARAMERR, errmsg='验证码过期')
     if real_img_code != img_code.upper():
-        return jsonify(error=RET.PARAMERR, errmsg='验证码错误')
+        return jsonify(errno=RET.PARAMERR, errmsg='验证码错误')
 
     # 验证客户是否已存在
     try:
         is_exist_user = User.query.filter_by(mobile=mobile).first()
     except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     if is_exist_user:
-        return jsonify(error=RET.DATAEXIST, errmsg=error_map[RET.DATAEXIST])
+        return jsonify(errno=RET.DATAEXIST, errmsg=error_map[RET.DATAEXIST])
 
     # 发送短信
     sms_code = '%04d' % random.randint(0, 9999)
@@ -84,17 +84,17 @@ def get_sms_code():
     # 第三方云通讯平台 发送短信验证码
     sms_send_res = CCP().send_template_sms('13182978726', [sms_code, 5], 1)
     if sms_send_res != 0:
-        return jsonify(error=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
+        return jsonify(errno=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
 
     # 保存短信验证码
     try:
         sr.set("img_code_id" + mobile, sms_code, ex=300)
     except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回结果
-    return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
 # 注册
@@ -106,24 +106,24 @@ def register():
     password = request.json.get('password')
 
     if not all([mobile, sms_code, password]):
-        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 验证手机号码格式是否正确
     if not re.match(r'1[345789]\d{9}$', mobile):
-        return jsonify(error=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 根据手机号从数据库读取real_msm_code
     try:
         real_msm_code = sr.get("img_code_id" + mobile)
     except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 验证短信验证码是否 过期/一致
     if not real_msm_code:
-        return jsonify(error=RET.PARAMERR, errmsg='验证码过期')
+        return jsonify(errno=RET.PARAMERR, errmsg='验证码过期')
     if real_msm_code != sms_code.upper():
-        return jsonify(error=RET.PARAMERR, errmsg='验证码错误')
+        return jsonify(errno=RET.PARAMERR, errmsg='验证码错误')
 
     # 存储客户信息
     user = User()
@@ -136,11 +136,11 @@ def register():
         db.session.commit()
     except BaseException as e:
         db.session.rollback()
-        current_app.logger.error(e)
-        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 状态保持
     session['user_id'] = user.id
 
     # 返回结果
-    return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
