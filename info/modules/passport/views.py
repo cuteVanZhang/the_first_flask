@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 from flask import request, abort, jsonify, current_app, make_response, Response, session
+from werkzeug.security import check_password_hash
 
 from info import sr, db
 from info.lib.yuntongxun.sms import CCP
@@ -73,7 +74,7 @@ def get_sms_code():
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     if is_exist_user:
-        return jsonify(errno=RET.DATAEXIST, errmsg=error_map[RET.DATAEXIST])
+        return jsonify(errno=RET.DATAEXIST, errmsg='用户已存在')
 
     # 发送短信
     sms_code = '%04d' % random.randint(0, 9999)
@@ -144,3 +145,42 @@ def register():
 
     # 返回结果
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+@passport_blu.route('/login', methods=['POST'])
+def login():
+    # 获取校验参数
+    mobile = request.json.get("mobile")
+    password = request.json.get("password")
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 判断账号是否存在
+    try:
+        user = User.query.filter_by(mobile=mobile).first()
+    except BaseException as e:
+        current_app.logger.errno(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if not user:
+        return jsonify(errno=RET.USERERR, errmsg="账号不存，请先注册!")
+
+    # 从数据库读取账号，密码，校验
+    pwhash = user.password_hash
+    if not check_password_hash(pwhash, password):
+        return jsonify(errno=RET.LOGINERR, errmsg="密码错误!")
+
+    # 更新last_login
+    user.last_login = datetime.now()
+
+    # 状态保持
+    session["user_id"] = user.id
+
+    # 返回结果
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# @passport_blu.route('/show_log_msg')
+# def show_log_msg():
+#     # 获取user_d
+#     pass
