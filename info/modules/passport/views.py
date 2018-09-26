@@ -180,7 +180,9 @@ def login():
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
-# @passport_blu.route('/show_log_msg')
-# def show_log_msg():
-#     # 获取user_d
-#     pass
+@passport_blu.route('/logout')
+def logout():
+
+    session.pop("user_id", None)
+
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
