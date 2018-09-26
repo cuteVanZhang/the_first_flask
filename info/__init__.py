@@ -5,6 +5,7 @@ from flask import Flask
 from flask_migrate import Migrate
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import CSRFProtect
 from redis import StrictRedis
 
 from config import config_dict
@@ -38,6 +39,8 @@ def creat_app(config_type):
     sr = StrictRedis(host=config_class.REDIS_HOST, port=config_class.REDIS_PORT, decode_responses=True)
     Session(app)
     Migrate(app, db)
+
+    # CSRFProtect(app)
 
     from .modules.home import home_blu
     app.register_blueprint(home_blu)
