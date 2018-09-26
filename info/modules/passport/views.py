@@ -1,7 +1,8 @@
 import random
 import re
+from datetime import datetime
 
-from flask import request, abort, jsonify, current_app, make_response, Response
+from flask import request, abort, jsonify, current_app, make_response, Response, session
 
 from info import sr, db
 from info.modes import User
@@ -25,7 +26,7 @@ def get_img_code():
 
     # 保存图片文本，图片key
     try:
-        sr.set('img_code_id'+img_code_id, img_text, ex=180)
+        sr.set('img_code_id' + img_code_id, img_text, ex=180)
     except BaseException as e:
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
@@ -63,13 +64,23 @@ def get_sms_code():
     if real_img_code != img_code.upper():
         return jsonify(error=RET.PARAMERR, errmsg='验证码错误')
 
+    # 验证客户是否已存在
+    try:
+        is_exist_user = User.query.filter_by(mobile=mobile).first()
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if is_exist_user:
+        return jsonify(error=RET.DATAEXIST, errmsg=error_map[RET.DATAEXIST])
+
     # 发送短信
     sms_code = '%04d' % random.randint(0, 9999)
     current_app.logger.info('短信验证码为:%s' % sms_code)
 
     # 保存短信验证码
     try:
-        sr.set("img_code_id"+mobile, sms_code, ex=60)
+        sr.set("img_code_id" + mobile, sms_code, ex=60)
     except BaseException as e:
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
@@ -95,7 +106,7 @@ def register():
 
     # 根据手机号从数据库读取real_msm_code
     try:
-        real_msm_code = sr.get("img_code_id"+mobile)
+        real_msm_code = sr.get("img_code_id" + mobile)
     except BaseException as e:
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
@@ -109,8 +120,9 @@ def register():
     # 存储客户信息
     user = User()
     user.mobile = mobile
-    user.password_hash = password
+    user.password = password
     user.nick_name = mobile
+    user.last_login = datetime.now()
     try:
         db.session.add(user)
         db.session.commit()
@@ -118,5 +130,9 @@ def register():
         db.session.rollback()
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    # 状态保持
+    session['user_id'] = user.id
+
     # 返回结果
     return jsonify(error=RET.OK, errmsg=error_map[RET.OK])
