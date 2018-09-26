@@ -5,6 +5,7 @@ from datetime import datetime
 from flask import request, abort, jsonify, current_app, make_response, Response, session
 
 from info import sr, db
+from info.lib.yuntongxun.sms import CCP
 from info.modes import User
 from info.modules.passport import passport_blu
 from info.utils.captcha.pic_captcha import captcha
@@ -76,11 +77,18 @@ def get_sms_code():
 
     # 发送短信
     sms_code = '%04d' % random.randint(0, 9999)
-    current_app.logger.info('短信验证码为:%s' % sms_code)
+
+    # #控制台模拟发送短信
+    # current_app.logger.info('短信验证码为:%s' % sms_code)
+
+    # 第三方云通讯平台 发送短信验证码
+    sms_send_res = CCP().send_template_sms('13182978726', [sms_code, 5], 1)
+    if sms_send_res != 0:
+        return jsonify(error=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
 
     # 保存短信验证码
     try:
-        sr.set("img_code_id" + mobile, sms_code, ex=60)
+        sr.set("img_code_id" + mobile, sms_code, ex=300)
     except BaseException as e:
         current_app.logger.error(e)
         return jsonify(error=RET.DBERR, errmsg=error_map[RET.DBERR])
