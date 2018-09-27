@@ -11,15 +11,13 @@ from . import home_blu
 def index():
     # 获取session 中的user_id
     user_id = session.get("user_id")
-    if not user_id:
-        user = None
-    else:
+    user = None
+    if user_id:
         try:
             user = User.query.get(user_id)
         except BaseException as e:
             current_app.logger.errno(e)
-            return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
+    user = user.to_dict() if user else None
     return render_template('index.html', user=user)
 
 
@@ -27,7 +25,3 @@ def index():
 def favicon():
     return current_app.send_static_file('news/images/favicon.ico')
 
-
-@home_blu.route('/images/<ps>')
-def avatar(ps):
-    return current_app.send_static_file('news/images/'+ps)

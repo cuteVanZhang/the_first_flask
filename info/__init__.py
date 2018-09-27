@@ -50,4 +50,5 @@ def creat_app(config_type):
     setup_log(config_class.LOG_LEVEL)
     # from .modes import *
     import info.modes
+
     return app

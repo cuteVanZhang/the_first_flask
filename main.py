@@ -10,4 +10,6 @@ mgr.add_command('mc', MigrateCommand)
 
 if __name__ == '__main__':
     print(app.url_map)
+    # print(app.url_map.converters)
+    # print(app.template_filter)
     mgr.run()

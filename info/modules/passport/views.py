@@ -53,7 +53,7 @@ def get_sms_code():
 
     # 验证手机号码格式是否正确
     if not re.match(r'1[345789]\d{9}$', mobile):
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg="手机号格式错误")
 
     # 根据图片key,从数据库获取图片text
     try:
@@ -82,12 +82,12 @@ def get_sms_code():
     sms_code = '%04d' % random.randint(0, 9999)
 
     # #控制台模拟发送短信
-    # current_app.logger.info('短信验证码为:%s' % sms_code)
+    current_app.logger.info('短信验证码为:%s' % sms_code)
 
     # 第三方云通讯平台 发送短信验证码
-    sms_send_res = CCP().send_template_sms('13182978726', [sms_code, 5], 1)
-    if sms_send_res != 0:
-        return jsonify(errno=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
+    # sms_send_res = CCP().send_template_sms('13182978726', [sms_code, 5], 1)
+    # if sms_send_res != 0:
+    #     return jsonify(errno=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
 
     # 保存短信验证码
     try:
@@ -97,7 +97,7 @@ def get_sms_code():
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回结果
-    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+    return jsonify(errno=RET.OK, errmsg="短信发送成功!")
 
 
 # 注册
@@ -160,7 +160,7 @@ def login():
 
     # 验证手机号码格式是否正确
     if not re.match(r'1[345789]\d{9}$', mobile):
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return jsonify(errno=RET.PARAMERR, errmsg="手机号格式错误")
 
     # 判断账号是否存在
     try:

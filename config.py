@@ -14,6 +14,7 @@ class Config:
     SESSION_USE_SIGNER = True
     PERMANENT_SESSION_LIFETIME = timedelta(days=31)
     SECRET_KEY = '2wEI27BBgH2D+jRCHoO994df0CKlBe5azbYdiDX9JaN2I3vO'
+    SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 
 
 class DevelopmentConfig(Config):
