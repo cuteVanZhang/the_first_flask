@@ -10,7 +10,6 @@ from redis import StrictRedis
 
 from config import config_dict
 
-
 db = None  # type: SQLAlchemy
 sr = None  # type: StrictRedis
 
@@ -50,5 +49,8 @@ def creat_app(config_type):
     setup_log(config_class.LOG_LEVEL)
     # from .modes import *
     import info.modes
+
+    from info.common import index_convert
+    app.add_template_filter(index_convert, "index_convert")
 
     return app

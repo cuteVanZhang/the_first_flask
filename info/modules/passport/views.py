@@ -30,7 +30,7 @@ def get_img_code():
     try:
         sr.set('img_code_id' + img_code_id, img_text, ex=180)
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return abort(500)
         # 此处返回图片bytes，不接受json
         # return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
@@ -59,7 +59,7 @@ def get_sms_code():
     try:
         real_img_code = sr.get('img_code_id' + img_code_id)
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.eorno(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 验证码和图片text 是否过期/一致
@@ -72,7 +72,7 @@ def get_sms_code():
     try:
         is_exist_user = User.query.filter_by(mobile=mobile).first()
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     if is_exist_user:
@@ -93,7 +93,7 @@ def get_sms_code():
     try:
         sr.set("img_code_id" + mobile, sms_code, ex=300)
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回结果
@@ -119,7 +119,7 @@ def register():
     try:
         real_msm_code = sr.get("img_code_id" + mobile)
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 验证短信验证码是否 过期/一致
@@ -139,7 +139,7 @@ def register():
         db.session.commit()
     except BaseException as e:
         db.session.rollback()
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 状态保持
@@ -166,7 +166,7 @@ def login():
     try:
         user = User.query.filter_by(mobile=mobile).first()
     except BaseException as e:
-        current_app.logger.errno(e)
+        current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     if not user:
@@ -176,7 +176,7 @@ def login():
     # try:
     #     pwhash = user.password_hash
     # except BaseException as e:
-    #     current_app.logger.errno(e)
+    #     current_app.logger.error(e)
     #     return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 将密码验证封装到对象的方法中
