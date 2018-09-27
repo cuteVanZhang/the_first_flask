@@ -1,8 +1,8 @@
 import logging
 
-from flask import session, current_app, render_template, jsonify
+from flask import session, current_app, render_template, jsonify, request
 
-from info.constants import CLICK_RANK_MAX_NEWS
+from info.constants import CLICK_RANK_MAX_NEWS, HOME_PAGE_MAX_NEWS
 from info.modes import User, News
 from info.utils.response_code import RET, error_map
 from . import home_blu
@@ -29,6 +29,45 @@ def index():
     news_list = [news.to_basic_dict() for news in news_list]
 
     return render_template('index.html', user=user, news_list=news_list)
+
+
+# 获取新闻列表
+@home_blu.route('/get_news_list')
+def get_news_list():
+    # 获取校验参数
+    cid = request.args.get("cid")
+    cur_page = request.args.get("cur_page")
+    per_count = request.args.get("per_count", HOME_PAGE_MAX_NEWS)
+    if not all([cid, cur_page]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 格式转换！！！
+    try:
+        cid = int(cid)
+        cur_page = int(cur_page)
+        per_count = int(per_count)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 从数据库操作数据
+    filter_list = []
+    if cid != 1:
+        filter_list.append(News.category_id == cid)
+
+    try:
+        pn = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(cur_page, per_count)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    data = {
+        "total_page": pn.pages,
+        "news_list": [news.to_basic_dict() for news in pn.items]
+    }
+
+    # 返回结果给前端
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=data)
 
 
 @home_blu.route('/favicon.ico')
