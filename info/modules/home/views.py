@@ -3,7 +3,7 @@ import logging
 from flask import session, current_app, render_template, jsonify, request
 
 from info.constants import CLICK_RANK_MAX_NEWS, HOME_PAGE_MAX_NEWS
-from info.modes import User, News
+from info.modes import User, News, Category
 from info.utils.response_code import RET, error_map
 from . import home_blu
 
@@ -28,7 +28,15 @@ def index():
         news_list = []
     news_list = [news.to_basic_dict() for news in news_list]
 
-    return render_template('index.html', user=user, news_list=news_list)
+    # 获取分类
+    try:
+        categories = Category.query.all()
+    except BaseException as e:
+        current_app.logger.error(e)
+        categories = []
+    categories = [category.to_dict() for category in categories]
+
+    return render_template('index.html', user=user, news_list=news_list, categories=categories)
 
 
 # 获取新闻列表
