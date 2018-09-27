@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 
 from flask import request, abort, jsonify, current_app, make_response, Response, session
-from werkzeug.security import check_password_hash
 
 from info import sr, db
 from info.lib.yuntongxun.sms import CCP
@@ -20,8 +19,9 @@ def get_img_code():
     # 获取校验参数
     img_code_id = request.args.get('img_code_id')
     if not img_code_id:
-        # return abort(403)
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        return abort(403)
+        # 此处返回图片bytes，不接受json
+        # return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 获取图片
     img_name, img_text, img_bytes = captcha.generate_captcha()
@@ -31,7 +31,9 @@ def get_img_code():
         sr.set('img_code_id' + img_code_id, img_text, ex=180)
     except BaseException as e:
         current_app.logger.errno(e)
-        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+        return abort(500)
+        # 此处返回图片bytes，不接受json
+        # return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 返回图片Bytes
     response = make_response(img_bytes)  # type: Response
@@ -64,7 +66,7 @@ def get_sms_code():
     if not real_img_code:
         return jsonify(errno=RET.PARAMERR, errmsg='验证码过期')
     if real_img_code != img_code.upper():
-        return jsonify(errno=RET.PARAMERR, errmsg='验证码错误')
+        return jsonify(errno=RET.DATAERR, errmsg='验证码错误')
 
     # 验证客户是否已存在
     try:
@@ -147,12 +149,17 @@ def register():
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
+# 登录
 @passport_blu.route('/login', methods=['POST'])
 def login():
     # 获取校验参数
     mobile = request.json.get("mobile")
     password = request.json.get("password")
     if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 验证手机号码格式是否正确
+    if not re.match(r'1[345789]\d{9}$', mobile):
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 判断账号是否存在
@@ -166,12 +173,19 @@ def login():
         return jsonify(errno=RET.USERERR, errmsg="账号不存，请先注册!")
 
     # 从数据库读取账号，密码，校验
-    pwhash = user.password_hash
-    if not check_password_hash(pwhash, password):
-        return jsonify(errno=RET.LOGINERR, errmsg="密码错误!")
+    # try:
+    #     pwhash = user.password_hash
+    # except BaseException as e:
+    #     current_app.logger.errno(e)
+    #     return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    # 将密码验证封装到对象的方法中
+    if not user.check_password(password):
+        return jsonify(errno=RET.LOGINERR, errmsg="用户名/密码错误!")
 
     # 更新last_login
     user.last_login = datetime.now()
+    # db.session.commit()  设置 "SQLALCHEMY_COMMIT_ON_TEARDOWN"属性，<请求结束前>自动提交
 
     # 状态保持
     session["user_id"] = user.id
