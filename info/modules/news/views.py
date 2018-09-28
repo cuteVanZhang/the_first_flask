@@ -2,11 +2,12 @@ from flask import render_template, current_app, abort, session, request, jsonify
 
 from info import db
 from info.constants import CLICK_RANK_MAX_NEWS
-from info.modes import News, User
+from info.modes import News, User, Comment
 from info.modules.news import news_blu
 from info.utils.response_code import RET, error_map
 
 
+# 新闻详情页面
 @news_blu.route('/<int:news_id>')
 def get_news_detail(news_id):
     # 数据库查询数据
@@ -37,7 +38,7 @@ def get_news_detail(news_id):
     is_collected = 0
     if user:
         try:
-            user_collect_list = [ news.to_dict().get("id") for news in user.collection_news]
+            user_collect_list = [news.to_dict().get("id") for news in user.collection_news]
         except BaseException as e:
             current_app.logger.error(e)
         else:
@@ -46,7 +47,8 @@ def get_news_detail(news_id):
     user = user.to_dict() if user else None
 
     # 模板渲染返回
-    return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user, is_collected=is_collected)
+    return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user,
+                           is_collected=is_collected)
 
 
 # 新闻收藏
@@ -92,3 +94,33 @@ def news_collect():
             return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 评论
+@news_blu.route('/news_comment', methods=["POST"])
+def news_comment():
+    # 获取校验参数 news_id/comment
+    news_id = request.json.get("news_id")
+    comment = request.json.get("comment")
+    if not all([news_id, comment]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 获取用户信息
+    user_id = session.get("user_id")
+    print(comment)
+    # 数据库增加数据
+    comment = Comment()
+    comment.news_id = news_id
+    comment.user_id = user_id
+    comment.content = comment
+    try:
+        db.session.add(comment)
+        db.session.commit()
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    # 返回评论对象的数据
+    date = comment.to_dict()
+    print(date.get("content"))
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=date)
