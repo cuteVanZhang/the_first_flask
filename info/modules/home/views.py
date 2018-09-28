@@ -78,6 +78,9 @@ def get_news_list():
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=data)
 
 
+# 获取新闻详情页面
+
+
 @home_blu.route('/favicon.ico')
 def favicon():
     return current_app.send_static_file('news/images/favicon.ico')

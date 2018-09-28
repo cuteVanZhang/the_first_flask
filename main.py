@@ -6,7 +6,7 @@ from info import creat_app
 app = creat_app('dev')
 mgr = Manager(app)
 mgr.add_command('mc', MigrateCommand)
-app.template_filter
+
 
 if __name__ == '__main__':
     print(app.url_map)
