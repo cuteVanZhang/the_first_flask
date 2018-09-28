@@ -16,7 +16,7 @@
 <body>
 <div class="header_con">
     <div class="header">
-        <a href="#" class="logo fl"><img src="../static/news/images/logo.png" alt="logo"></a>
+        <a href="/" class="logo fl"><img src="../static/news/images/logo.png" alt="logo"></a>
 {% block cate %}
 
 {% endblock %}
@@ -49,7 +49,7 @@
         </div>
         <ul class="rank_list">
             {% for news in news_list %}
-                <li><span class={{ loop.index | index_convert }}>{{ loop.index }}</span><a href="/news/1">{{ news.title }}</a></li>
+                <li><span class={{ loop.index | index_convert }}>{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>
             {% endfor %}
         </ul>
     </div>
