@@ -150,7 +150,7 @@ def register():
 
 
 # 登录
-@passport_blu.route('/login', methods=['POST'])
+@passport_blu.route('/login', methods=["POST", "GET"])
 def login():
     # 获取校验参数
     mobile = request.json.get("mobile")
