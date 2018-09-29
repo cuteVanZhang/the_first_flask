@@ -13,7 +13,10 @@ def get_news_detail(news_id):
     # 数据库查询数据
     try:
         news = News.query.get(news_id)
+        news.clicks += 1
+        db.session.commit()
     except BaseException as e:
+        db.session.rollback()
         current_app.logger.error(e)
         return abort(404)
 
@@ -46,9 +49,12 @@ def get_news_detail(news_id):
 
     user = user.to_dict() if user else None
 
+    # 获取评论列表
+    comment_list = [comment.to_dict() for comment in news.comments][::-1]
+
     # 模板渲染返回
     return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user,
-                           is_collected=is_collected)
+                           is_collected=is_collected, comment_list=comment_list)
 
 
 # 新闻收藏
@@ -101,26 +107,28 @@ def news_collect():
 def news_comment():
     # 获取校验参数 news_id/comment
     news_id = request.json.get("news_id")
-    comment = request.json.get("comment")
-    if not all([news_id, comment]):
+    comment_content = request.json.get("comment")
+    if not all([news_id, comment_content]):
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 获取用户信息
     user_id = session.get("user_id")
-    print(comment)
+
+    if not user_id:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
     # 数据库增加数据
     comment = Comment()
     comment.news_id = news_id
     comment.user_id = user_id
-    comment.content = comment
+    comment.content = comment_content
     try:
         db.session.add(comment)
         db.session.commit()
     except BaseException as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
     # 返回评论对象的数据
     date = comment.to_dict()
-    print(date.get("content"))
+
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=date)
