@@ -50,7 +50,28 @@ def get_news_detail(news_id):
     user = user.to_dict() if user else None
 
     # 获取评论列表
-    comment_list = [comment.to_dict() for comment in news.comments.order_by(Comment.create_time.desc()).all()]
+    comments = news.comments.order_by(Comment.create_time.desc()).all()
+
+    # 获取用户评论列表
+    if user:
+        try:
+            user_comment_list = CommentLike.query.filter(CommentLike.user_id==user_id).all()
+            user_comment_list = [commentLike.comment_id for commentLike in user_comment_list]
+        except BaseException as e:
+            current_app.logger.error(e)
+            jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+    else:
+        user_comment_list = []
+
+    print(user_comment_list)
+    comment_list = []
+    for comment in comments:
+        comment_dict = comment.to_dict()
+        is_like = False
+        if comment.id in user_comment_list:
+            is_like = True
+        comment_dict["is_like"] = is_like
+        comment_list.append(comment_dict)
 
     # 模板渲染返回
     return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user,
@@ -194,6 +215,9 @@ def comment_like():
         except BaseException as e:
             current_app.logger.error(e)
 
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
+
     # 获取校验参数
     comment_id = request.json.get("comment_id")
     action = request.json.get("action")
@@ -211,23 +235,27 @@ def comment_like():
         return jsonify(errno=RET.NODATA, errmsg=error_map[RET.NODATA])
 
     if action == "add":
+        # user.like_comment.append(comment)
+
         comment.like_count += 1
+        # 更改用户点赞数据修改comment_like 表中数据
+        commentLike = CommentLike()
+        commentLike.comment_id = comment_id
+        commentLike.user_id = user_id
+        db.session.add(commentLike)
     elif action == "remove":
-        comment.like_count += 1
+        # user.like_comment.remove(comment)
+        try:
+            commentLike = CommentLike.query.filter(CommentLike.comment_id==comment_id, CommentLike.user_id==user_id).first()
+        except BaseException as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+        comment.like_count -= 1
+        db.session.delete(commentLike)
     else:
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
-    try:
-        db.session.commit()
-    except BaseException as e:
-        db.session.rollback()
-        current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
-    # 更改用户点赞数据修改comment_like 表中数据
-    commentLike = CommentLike()
-    commentLike.comment_id = comment_id
-    commentLike.user_id = user_id
     try:
         db.session.commit()
     except BaseException as e:
