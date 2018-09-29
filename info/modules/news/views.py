@@ -60,12 +60,6 @@ def get_news_detail(news_id):
 # 新闻收藏
 @news_blu.route('/news_collect', methods=["GET", "POST"])
 def news_collect():
-    # 获取校验参数
-    news_id = request.json.get("news_id")
-    action = request.json.get("action")
-    if not all([news_id, action]):
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
-
     # 获取用户状态/详情，未登录跳转到登录界面
     user_id = session.get("user_id")
     user = None
@@ -78,6 +72,12 @@ def news_collect():
     if not user:
         return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
 
+    # 获取校验参数
+    news_id = request.json.get("news_id")
+    action = request.json.get("action")
+    if not all([news_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
     # 修改数据库数据
     if action == "collect":
         try:
@@ -89,7 +89,7 @@ def news_collect():
             db.session.rollback()
             return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
-    else:
+    elif action == "cancel_collect":
         try:
             news = News.query.get(news_id)
             user.collection_news.remove(news)
@@ -99,23 +99,25 @@ def news_collect():
             db.session.rollback()
             return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
+    else:
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
 # 评论
 @news_blu.route('/news_comment', methods=["POST"])
 def news_comment():
+    # 获取用户信息
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
+
     # 获取校验参数 news_id/comment
     news_id = request.json.get("news_id")
     comment_content = request.json.get("comment")
     if not all([news_id, comment_content]):
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
-
-    # 获取用户信息
-    user_id = session.get("user_id")
-
-    if not user_id:
-        return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
 
     # 数据库增加数据
     comment = Comment()
@@ -132,3 +134,48 @@ def news_comment():
     date = comment.to_dict()
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=date)
+
+
+# 点赞
+@news_blu.route('/comment_like', methods=["POST"])
+def comment_like():
+    # 获取用户状态/详情，未登录跳转到登录界面
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
+
+    # 获取校验参数
+    comment_id = request.json.get("comment_id")
+    action = request.json.get("action")
+    if not all([comment_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 修改数据库
+    try:
+        comment = Comment.query.get(comment_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if not comment:
+        return jsonify(errno=RET.NODATA, errmsg=error_map[RET.NODATA])
+
+    if action == "add":
+        comment.like_count += 1
+    elif action == "remove":
+        comment.like_count += 1
+    else:
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    try:
+        db.session.commit()
+    except BaseException as e:
+        db.session.rollback()
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+
+
