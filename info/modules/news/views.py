@@ -2,7 +2,7 @@ from flask import render_template, current_app, abort, session, request, jsonify
 
 from info import db
 from info.constants import CLICK_RANK_MAX_NEWS
-from info.modes import News, User, Comment
+from info.modes import News, User, Comment, CommentLike
 from info.modules.news import news_blu
 from info.utils.response_code import RET, error_map
 
@@ -141,8 +141,12 @@ def news_comment():
 def comment_like():
     # 获取用户状态/详情，未登录跳转到登录界面
     user_id = session.get("user_id")
-    if not user_id:
-        return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
+    user = None
+    if user_id:
+        try:
+            user = User.query.get(user_id)
+        except BaseException as e:
+            current_app.logger.error(e)
 
     # 获取校验参数
     comment_id = request.json.get("comment_id")
@@ -174,8 +178,15 @@ def comment_like():
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
+    # 更改用户点赞数据修改comment_like 表中数据
+    commentLike = CommentLike()
+    commentLike.comment_id = comment_id
+    commentLike.user_id = user_id
+    try:
+        db.session.commit()
+    except BaseException as e:
+        db.session.rollback()
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
-
-
-
-
