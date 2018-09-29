@@ -1,4 +1,4 @@
-from flask import render_template, current_app, abort, session, request, jsonify, redirect, url_for
+from flask import render_template, current_app, abort, session, request, jsonify
 
 from info import db
 from info.constants import CLICK_RANK_MAX_NEWS
@@ -38,19 +38,19 @@ def get_news_detail(news_id):
     news_list = [news.to_basic_dict() for news in news_list]
 
     # 是否收藏该新闻
-    is_collected = 0
+    is_collected = False
     if user:
         try:
             user_collect_list = [news.to_dict().get("id") for news in user.collection_news]
         except BaseException as e:
             current_app.logger.error(e)
         else:
-            is_collected = news_id if news_id in user_collect_list else 0
+            is_collected = True if news_id in user_collect_list else False
 
     user = user.to_dict() if user else None
 
     # 获取评论列表
-    comment_list = [comment.to_dict() for comment in news.comments][::-1]
+    comment_list = [comment.to_dict() for comment in news.comments.order_by(Comment.create_time.desc()).all()]
 
     # 模板渲染返回
     return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user,
@@ -76,6 +76,13 @@ def news_collect():
     news_id = request.json.get("news_id")
     action = request.json.get("action")
     if not all([news_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # int转换
+    try:
+        news_id = int(news_id)
+    except BaseException as e:
+        current_app.logger.error(e)
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 修改数据库数据
@@ -116,7 +123,25 @@ def news_comment():
     # 获取校验参数 news_id/comment
     news_id = request.json.get("news_id")
     comment_content = request.json.get("comment")
+    parent_id = request.json.get("parent_id")
     if not all([news_id, comment_content]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # int转换
+    try:
+        news_id = int(news_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 校验是否存在
+    try:
+        news = News.query.get(news_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if not news:
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 数据库增加数据
@@ -124,6 +149,27 @@ def news_comment():
     comment.news_id = news_id
     comment.user_id = user_id
     comment.content = comment_content
+
+    if parent_id:
+        # int转换
+        try:
+            parent_id = int(parent_id)
+        except BaseException as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+        # 校验是否存在
+        try:
+            pcm = Comment.query.get(parent_id)
+        except BaseException as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+        if not pcm:
+            return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+        comment.parent_id = parent_id
+
     try:
         db.session.add(comment)
         db.session.commit()
