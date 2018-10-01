@@ -1,6 +1,7 @@
-from flask import render_template, current_app, abort, session, request, jsonify
+from flask import render_template, current_app, abort, session, request, jsonify, g
 
 from info import db
+from info.common import user_login_data
 from info.constants import CLICK_RANK_MAX_NEWS
 from info.modes import News, User, Comment, CommentLike
 from info.modules.news import news_blu
@@ -9,6 +10,7 @@ from info.utils.response_code import RET, error_map
 
 # 新闻详情页面
 @news_blu.route('/<int:news_id>')
+@user_login_data
 def get_news_detail(news_id):
     # 数据库查询数据
     try:
@@ -20,14 +22,8 @@ def get_news_detail(news_id):
         current_app.logger.error(e)
         return abort(404)
 
-    # 判断登录状态，渲染页面
-    user_id = session.get("user_id")
-    user = None
-    if user_id:
-        try:
-            user = User.query.get(user_id)
-        except BaseException as e:
-            current_app.logger.error(e)
+    if not news:
+        return abort(404)
 
     # 新闻点击排行榜的渲染
     try:
@@ -39,6 +35,10 @@ def get_news_detail(news_id):
 
     # 是否收藏该新闻
     is_collected = False
+
+    # 判断登录状态，渲染页面
+    user = g.user
+
     if user:
         try:
             user_collect_list = [news.to_dict().get("id") for news in user.collection_news]
@@ -59,8 +59,8 @@ def get_news_detail(news_id):
     # 获取用户评论列表
     if user:
         try:
-            user_comment_list = CommentLike.query.filter(CommentLike.user_id==user_id).all()
-            user_comment_list = [commentLike.comment_id for commentLike in user_comment_list]
+            user_comment_list = CommentLike.query.filter(CommentLike.user_id==user.get("id")).all()
+            user_comment_list = [commentlike.comment_id for commentlike in user_comment_list]
         except BaseException as e:
             current_app.logger.error(e)
             jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
@@ -83,16 +83,10 @@ def get_news_detail(news_id):
 
 # 新闻收藏
 @news_blu.route('/news_collect', methods=["GET", "POST"])
+@user_login_data
 def news_collect():
     # 获取用户状态/详情，未登录跳转到登录界面
-    user_id = session.get("user_id")
-    user = None
-    if user_id:
-        try:
-            user = User.query.get(user_id)
-        except BaseException as e:
-            current_app.logger.error(e)
-
+    user = g.user
     if not user:
         return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
 
@@ -109,39 +103,34 @@ def news_collect():
         current_app.logger.error(e)
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
+    # 获取新闻对象
+    try:
+        news = News.query.get(news_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if not news:
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
     # 修改数据库数据
     if action == "collect":
-        try:
-            news = News.query.get(news_id)
-            user.collection_news.append(news)
-            db.session.commit()
-        except BaseException as e:
-            current_app.logger.error(e)
-            db.session.rollback()
-            return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
+        user.collection_news.append(news)
     elif action == "cancel_collect":
-        try:
-            news = News.query.get(news_id)
-            user.collection_news.remove(news)
-            db.session.commit()
-        except BaseException as e:
-            current_app.logger.error(e)
-            db.session.rollback()
-            return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
+        user.collection_news.remove(news)
     else:
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
-# 评论
+# 评论/回复评论
 @news_blu.route('/news_comment', methods=["POST"])
+@user_login_data
 def news_comment():
     # 获取用户信息
-    user_id = session.get("user_id")
-    if not user_id:
+    user = g.user
+    if not user:
         return jsonify(errno=RET.SESSIONERR, errmsg="用户未登录")
 
     # 获取校验参数 news_id/comment
@@ -171,7 +160,7 @@ def news_comment():
     # 数据库增加数据
     comment = Comment()
     comment.news_id = news_id
-    comment.user_id = user_id
+    comment.user_id = user.id
     comment.content = comment_content
 
     if parent_id:
@@ -199,6 +188,7 @@ def news_comment():
         db.session.commit()
     except BaseException as e:
         current_app.logger.error(e)
+        db.session.rollback()
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
     # 返回评论对象的数据
     date = comment.to_dict()
@@ -208,15 +198,10 @@ def news_comment():
 
 # 点赞
 @news_blu.route('/comment_like', methods=["POST"])
+@user_login_data
 def comment_like():
     # 获取用户状态/详情，未登录跳转到登录界面
-    user_id = session.get("user_id")
-    user = None
-    if user_id:
-        try:
-            user = User.query.get(user_id)
-        except BaseException as e:
-            current_app.logger.error(e)
+    user = g.user
 
     if not user:
         return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
@@ -244,12 +229,12 @@ def comment_like():
         # 更改用户点赞数据修改comment_like 表中数据
         commentLike = CommentLike()
         commentLike.comment_id = comment_id
-        commentLike.user_id = user_id
+        commentLike.user_id = user.id
         db.session.add(commentLike)
     elif action == "remove":
         # user.like_comment.remove(comment)
         try:
-            commentLike = CommentLike.query.filter(CommentLike.comment_id==comment_id, CommentLike.user_id==user_id).first()
+            commentLike = CommentLike.query.filter(CommentLike.comment_id==comment_id, CommentLike.user_id==user.id).first()
         except BaseException as e:
             current_app.logger.error(e)
             return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
