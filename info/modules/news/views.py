@@ -50,7 +50,11 @@ def get_news_detail(news_id):
     user = user.to_dict() if user else None
 
     # 获取评论列表
-    comments = news.comments.order_by(Comment.create_time.desc()).all()
+    try:
+        comments = news.comments.order_by(Comment.create_time.desc()).all()
+    except BaseException as e:
+        current_app.logger.error(e)
+        jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 获取用户评论列表
     if user:
@@ -63,7 +67,6 @@ def get_news_detail(news_id):
     else:
         user_comment_list = []
 
-    print(user_comment_list)
     comment_list = []
     for comment in comments:
         comment_dict = comment.to_dict()
