@@ -47,6 +47,8 @@ def creat_app(config_type):
     app.register_blueprint(passport_blu)
     from info.modules.news import news_blu
     app.register_blueprint(news_blu)
+    from info.modules.user import user_blu
+    app.register_blueprint(user_blu)
 
     setup_log(config_class.LOG_LEVEL)
     # from .modes import *

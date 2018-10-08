@@ -24,7 +24,7 @@
     <div class="user_login fr">
         <img src="{% if user.avatar_url %}{{ user.avatar_url }}
         {% else %}../static/news/images/person01.png{% endif %}" class="lgin_pic">
-        <a href="#" id="nick_name">{{ user.nick_name }}</a>
+        <a href="/user/user_info" id="nick_name">{{ user.nick_name }}</a>
         <a href="javascript:;" onclick="logout()">退出</a>
     </div>
 {% else %}
@@ -43,6 +43,8 @@
 {% block author_card %}
 
 {% endblock %}
+
+{% block rank %}
     <div class="rank_con fr">
         <div class="rank_title">
             <h3>点击排行</h3>
@@ -53,6 +55,8 @@
             {% endfor %}
         </ul>
     </div>
+{% endblock %}
+
 </div>
 <div class="footer">
     <div class="footer_links">

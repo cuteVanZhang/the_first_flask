@@ -59,7 +59,7 @@ def get_news_detail(news_id):
     # 获取用户评论列表
     if user:
         try:
-            user_comment_list = CommentLike.query.filter(CommentLike.user_id==user.get("id")).all()
+            user_comment_list = CommentLike.query.filter(CommentLike.user_id == user.get("id")).all()
             user_comment_list = [commentlike.comment_id for commentlike in user_comment_list]
         except BaseException as e:
             current_app.logger.error(e)
@@ -234,7 +234,8 @@ def comment_like():
     elif action == "remove":
         # user.like_comment.remove(comment)
         try:
-            commentLike = CommentLike.query.filter(CommentLike.comment_id==comment_id, CommentLike.user_id==user.id).first()
+            commentLike = CommentLike.query.filter(CommentLike.comment_id == comment_id,
+                                                   CommentLike.user_id == user.id).first()
         except BaseException as e:
             current_app.logger.error(e)
             return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
