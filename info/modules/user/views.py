@@ -1,8 +1,9 @@
 from flask import render_template, g, jsonify, redirect, url_for, request, current_app
 
+from info import db
 from info.common import user_login_data
-from info.constants import USER_COLLECTION_MAX_NEWS
-from info.modes import User
+from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT
+from info.modes import User, Category, News
 from info.modules.user import user_blu
 from info.utils.response_code import RET, error_map
 
@@ -22,7 +23,6 @@ def user_info():
 @user_blu.route('/base_info', methods=["POST", "GET"])
 @user_login_data
 def base_info():
-
     user = g.user
     if not user:
         return redirect(url_for("home.index"))
@@ -50,7 +50,8 @@ def base_info():
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
-    if is_existed_nick_name:
+    # 存在且不是user
+    if is_existed_nick_name and is_existed_nick_name != user:
         return jsonify(errno=RET.DATAEXIST, errmsg="该昵称已存在!")
 
     user.signature = signature
@@ -64,7 +65,6 @@ def base_info():
 @user_blu.route('/pass_info', methods=["POST", "GET"])
 @user_login_data
 def pass_info():
-
     user = g.user
     if not user:
         return redirect(url_for("home.index"))
@@ -98,7 +98,6 @@ def pass_info():
 @user_blu.route('/collection')
 @user_login_data
 def collection():
-
     user = g.user
     if not user:
         return redirect(url_for("home.index"))
@@ -126,3 +125,89 @@ def collection():
     }
 
     return render_template("user_collection.html", data=data)
+
+
+# 新闻发布
+@user_blu.route('/news_release', methods=["POST", "GET"])
+@user_login_data
+def news_release():
+    user = g.user
+    if not user:
+        return redirect(url_for("home.index"))
+
+    # 获取分类
+    try:
+        cates = Category.query.all()
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+    cates = [cate.to_dict() for cate in cates if cate.id != 1]
+
+    if request.method == "GET":
+        return render_template("user_news_release.html", cates=cates)
+
+    # 获取校验参数
+    title = request.form.get("title")
+    category_id = request.form.get("category_id")
+    digest = request.form.get("digest")
+    content = request.form.get("content")
+    index_image = request.files.get("index_image")
+    if not all([title, category_id, digest, index_image, content]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    try:
+        category_id = int(category_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    if category_id not in [cate.get("id") for cate in cates]:
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    my_news = News()
+    my_news.title = title
+    my_news.digest = digest
+    my_news.category_id = category_id
+    my_news.content = content
+    my_news.status = 1
+    my_news.source = user.nick_name
+
+    my_news.index_image_url = None  # todo
+
+    db.session.add(my_news)
+
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 我的发布
+@user_blu.route('/news_list')
+@user_login_data
+def news_list():
+    user = g.user
+    if not user:
+        return redirect(url_for("home.index"))
+
+    # 获取校验参数
+    cp = request.args.get("p")
+    cp = cp if cp else 1
+
+    try:
+        cp = int(cp)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 查询我发布的新闻
+    try:
+        my_news = News.query.filter_by(source=user.nick_name).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    data = {
+        "my_news_list": [my_new.to_review_dict() for my_new in my_news.items],
+        "cur_page": my_news.page,
+        "total_page": my_news.pages
+    }
+
+    return render_template("user_news_list.html", data=data)
