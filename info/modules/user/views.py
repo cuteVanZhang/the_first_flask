@@ -1,6 +1,7 @@
 from flask import render_template, g, jsonify, redirect, url_for, request, current_app
 
 from info.common import user_login_data
+from info.constants import USER_COLLECTION_MAX_NEWS
 from info.modes import User
 from info.modules.user import user_blu
 from info.utils.response_code import RET, error_map
@@ -91,3 +92,37 @@ def pass_info():
     user.password = new_password
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 我的收藏
+@user_blu.route('/collection')
+@user_login_data
+def collection():
+
+    user = g.user
+    if not user:
+        return redirect(url_for("home.index"))
+
+    # 获取校验参数
+    cp = request.args.get("p")
+    cp = cp if cp else 1
+
+    try:
+        cp = int(cp)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    try:
+        pn = user.collection_news.paginate(cp, USER_COLLECTION_MAX_NEWS)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    data = {
+        "collection_news_list": [collection_news.to_dict() for collection_news in pn.items],
+        "cur_page": pn.page,
+        "total_page": pn.pages
+    }
+
+    return render_template("user_collection.html", data=data)
