@@ -49,6 +49,8 @@ def creat_app(config_type):
     app.register_blueprint(news_blu)
     from info.modules.user import user_blu
     app.register_blueprint(user_blu)
+    from info.modules.admin import admin_blu
+    app.register_blueprint(admin_blu)
 
     setup_log(config_class.LOG_LEVEL)
     # from .modes import *
