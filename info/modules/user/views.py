@@ -2,7 +2,7 @@ from flask import render_template, g, jsonify, redirect, url_for, request, curre
 
 from info import db
 from info.common import user_login_data, img_upload
-from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT
+from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT, QINIU_DOMIN_PREFIX
 from info.modes import User, Category, News, tb_user_collection
 from info.modules.user import user_blu
 from info.utils.response_code import RET, error_map
@@ -70,7 +70,7 @@ def pic_info():
         return abort(403)
 
     if request.method == "GET":
-        return render_template("user_pic_info.html")
+        return render_template("user_pic_info.html", user=user.to_dict())
 
     # 点击保存，提交post请求
     # 获取校验参数
@@ -147,8 +147,7 @@ def news_release():
     category_id = request.form.get("category_id")
     digest = request.form.get("digest")
     content = request.form.get("content")
-    index_image = request.files.get("index_image")
-    if not all([title, category_id, digest, index_image, content]):
+    if not all([title, category_id, digest, content]):
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     try:
@@ -169,7 +168,18 @@ def news_release():
     my_news.source = "个人发布"
     my_news.user_id = user.id
 
-    my_news.index_image_url = None  # todo
+    index_image_file = request.files.get("index_image")
+    # 获取文件对象 若获取到则添加index_image_url字段，反之不添加。
+    if index_image_file:
+        img_bytes = index_image_file.read()
+
+        try:
+            file_name = img_upload(img_bytes)
+        except BaseException as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
+
+        my_news.index_image_url = QINIU_DOMIN_PREFIX + file_name
 
     db.session.add(my_news)
 
@@ -237,7 +247,7 @@ def news_list():
 
     # 查询我发布的新闻
     try:
-        my_news = News.query.filter_by(user_id=user.id).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
+        my_news = News.query.filter_by(user_id=user.id).order_by(News.create_time.desc()).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
     except BaseException as e:
         current_app.logger.error(e)
         my_news_list = []
