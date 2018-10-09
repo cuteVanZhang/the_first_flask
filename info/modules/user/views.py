@@ -1,7 +1,7 @@
 from flask import render_template, g, jsonify, redirect, url_for, request, current_app, abort
 
 from info import db
-from info.common import user_login_data
+from info.common import user_login_data, img_upload
 from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT
 from info.modes import User, Category, News, tb_user_collection
 from info.modules.user import user_blu
@@ -59,6 +59,35 @@ def base_info():
     user.gender = gender
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 头像设置
+@user_blu.route('/pic_info', methods=["POST", "GET"])
+@user_login_data
+def pic_info():
+    user = g.user
+    if not user:
+        return abort(403)
+
+    if request.method == "GET":
+        return render_template("user_pic_info.html")
+
+    # 点击保存，提交post请求
+    # 获取校验参数
+    img_files = request.files.get("avatar")
+    if img_files:
+        img_bytes = img_files.read()
+
+        try:
+            # 将文件存储在第三方服务器(七牛云)
+            files_name = img_upload(img_bytes)
+        except BaseException as e:
+            current_app.logger.error(e)
+            return jsonify(errno=RET.THIRDERR, errmsg=error_map[RET.THIRDERR])
+
+        user.avatar_url = files_name
+
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK], data=user.to_dict())
 
 
 # 密码修改
@@ -167,7 +196,8 @@ def collection():
         cp = 1  # 异常是给cp设置为1 则不会应用整体运行
 
     try:
-        pn = user.collection_news.order_by(tb_user_collection.c.create_time.desc()).paginate(cp, USER_COLLECTION_MAX_NEWS)
+        pn = user.collection_news.order_by(tb_user_collection.c.create_time.desc()).paginate(cp,
+                                                                                             USER_COLLECTION_MAX_NEWS)
     except BaseException as e:
         current_app.logger.error(e)
         # 数据库异常时使用的默认值
@@ -225,4 +255,3 @@ def news_list():
     }
 
     return render_template("user_news_list.html", data=data)
-

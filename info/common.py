@@ -24,3 +24,23 @@ def user_login_data(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+access_key = "kJ8wVO7lmFGsdvtI5M7eQDEJ1eT3Vrygb4SmR00E"
+secret_key = "rGwHyAvnlLK7rU4htRpNYzpuz0OHJKzX2O1LWTNl"
+bucket_name = "infonews"  # 存储空间名称
+
+
+def img_upload(data):
+    import qiniu
+    q = qiniu.Auth(access_key, secret_key)
+    # key = 'hello'  # 自定义文件名
+    key = None  # 系统随机生成文件名扩展
+    token = q.upload_token(bucket_name)
+    ret, info = qiniu.put_data(token, key, data)
+    if ret is not None:
+        # print('All is OK')
+        return ret.get("key")
+    else:
+        # print(info)  # error message in info
+        raise BaseException(info)
