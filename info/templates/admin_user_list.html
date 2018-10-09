@@ -38,7 +38,7 @@
     </div>
     <div class="box">
         <div class="box">
-            <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="/admin/user_list"></div>
+            <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="{{ url_for("admin.user_list") }}"></div>
         </div>
     </div>
 </body>

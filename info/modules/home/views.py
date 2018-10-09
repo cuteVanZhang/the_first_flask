@@ -59,7 +59,7 @@ def get_news_list():
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
     # 从数据库操作数据
-    filter_list = []
+    filter_list = [News.status == 0]
     if cid != 1:
         filter_list.append(News.category_id == cid)
 

@@ -122,18 +122,18 @@ def user_list():
 @admin_blu.route('/news_review')
 def news_review():
 
-    return render_template("admin_user_list.html")  # todo
+    return render_template("admin_user_count.html")  # todo
 
 
 # 新闻版式编辑
 @admin_blu.route('/news_edit')
 def news_edit():
 
-    return render_template("admin_user_list.html")  # todo
+    return render_template("admin_user_count.html")  # todo
 
 
 # 新闻分类管理
 @admin_blu.route('/news_type')
 def news_type():
 
-    return render_template("admin_user_list.html")  # todo
+    return render_template("admin_user_count.html")  # todo

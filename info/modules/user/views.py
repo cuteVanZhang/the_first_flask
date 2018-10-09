@@ -1,9 +1,9 @@
-from flask import render_template, g, jsonify, redirect, url_for, request, current_app
+from flask import render_template, g, jsonify, redirect, url_for, request, current_app, abort
 
 from info import db
 from info.common import user_login_data
 from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT
-from info.modes import User, Category, News
+from info.modes import User, Category, News, tb_user_collection
 from info.modules.user import user_blu
 from info.utils.response_code import RET, error_map
 
@@ -25,7 +25,7 @@ def user_info():
 def base_info():
     user = g.user
     if not user:
-        return redirect(url_for("home.index"))
+        return abort(403)
 
     if request.method == "GET":
         return render_template("user_base_info.html", user=user.to_dict())
@@ -67,7 +67,7 @@ def base_info():
 def pass_info():
     user = g.user
     if not user:
-        return redirect(url_for("home.index"))
+        return abort(403)
 
     if request.method == "GET":
         return render_template("user_pass_info.html")
@@ -94,53 +94,20 @@ def pass_info():
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
-# 我的收藏
-@user_blu.route('/collection')
-@user_login_data
-def collection():
-    user = g.user
-    if not user:
-        return redirect(url_for("home.index"))
-
-    # 获取校验参数
-    cp = request.args.get("p")
-    cp = cp if cp else 1
-
-    try:
-        cp = int(cp)
-    except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
-
-    try:
-        pn = user.collection_news.paginate(cp, USER_COLLECTION_MAX_NEWS)
-    except BaseException as e:
-        current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-
-    data = {
-        "collection_news_list": [collection_news.to_dict() for collection_news in pn.items],
-        "cur_page": pn.page,
-        "total_page": pn.pages
-    }
-
-    return render_template("user_collection.html", data=data)
-
-
 # 新闻发布
 @user_blu.route('/news_release', methods=["POST", "GET"])
 @user_login_data
 def news_release():
     user = g.user
     if not user:
-        return redirect(url_for("home.index"))
+        return abort(403)
 
     # 获取分类
     try:
         cates = Category.query.all()
     except BaseException as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+        cates = []
     cates = [cate.to_dict() for cate in cates if cate.id != 1]
 
     if request.method == "GET":
@@ -170,13 +137,55 @@ def news_release():
     my_news.category_id = category_id
     my_news.content = content
     my_news.status = 1
-    my_news.source = user.nick_name
+    my_news.source = "个人发布"
+    my_news.user_id = user.id
 
     my_news.index_image_url = None  # todo
 
     db.session.add(my_news)
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 我的收藏
+@user_blu.route('/collection')
+@user_login_data
+def collection():
+    user = g.user
+    if not user:
+        return abort(403)
+
+    # 获取校验参数
+    # cp = request.args.get("p")
+    # cp = cp if cp else 1
+    cp = request.args.get("p", 1)
+
+    try:
+        cp = int(cp)
+    except BaseException as e:
+        current_app.logger.error(e)
+        cp = 1  # 异常是给cp设置为1 则不会应用整体运行
+
+    try:
+        pn = user.collection_news.order_by(tb_user_collection.c.create_time.desc()).paginate(cp, USER_COLLECTION_MAX_NEWS)
+    except BaseException as e:
+        current_app.logger.error(e)
+        # 数据库异常时使用的默认值
+        collection_news_list = []
+        cur_page = 1
+        total_page = 3
+    else:
+        collection_news_list = [collection_news.to_dict() for collection_news in pn.items]
+        cur_page = pn.page
+        total_page = pn.pages
+
+    data = {
+        "collection_news_list": collection_news_list,
+        "cur_page": cur_page,
+        "total_page": total_page
+    }
+
+    return render_template("user_collection.html", data=data)
 
 
 # 我的发布
@@ -188,26 +197,32 @@ def news_list():
         return redirect(url_for("home.index"))
 
     # 获取校验参数
-    cp = request.args.get("p")
-    cp = cp if cp else 1
+    cp = request.args.get("p", 1)
 
     try:
         cp = int(cp)
     except BaseException as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+        cp = 1
 
     # 查询我发布的新闻
     try:
-        my_news = News.query.filter_by(source=user.nick_name).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
+        my_news = News.query.filter_by(user_id=user.id).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
     except BaseException as e:
         current_app.logger.error(e)
-        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+        my_news_list = []
+        cur_page = 1
+        total_page = 3
+    else:
+        my_news_list = [my_new.to_review_dict() for my_new in my_news.items]
+        cur_page = my_news.page
+        total_page = my_news.pages
 
     data = {
-        "my_news_list": [my_new.to_review_dict() for my_new in my_news.items],
-        "cur_page": my_news.page,
-        "total_page": my_news.pages
+        "my_news_list": my_news_list,
+        "cur_page": cur_page,
+        "total_page": total_page
     }
 
     return render_template("user_news_list.html", data=data)
+

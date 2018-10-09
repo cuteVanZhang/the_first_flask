@@ -21,7 +21,7 @@
 
 
 
-        <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="/user/collection"></div>
+        <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="{{ url_for("user.collection") }}"></div>
     </div>
 </body>
 </html>

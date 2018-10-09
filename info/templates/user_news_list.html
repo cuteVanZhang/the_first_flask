@@ -17,14 +17,14 @@
             {% for my_news in data.my_news_list %}
 
                 {% if my_news.status==0 %}
-                    <li><a href="news_release">{{ my_news.title }}</a><em class="pass">已通过</em><span>{{ my_news.create_time }}</span></li>
+                    <li><a href="#">{{ my_news.title }}</a><em class="pass">已通过</em><span>{{ my_news.create_time }}</span></li>
 
                 {% elif my_news.status==1 %}
-                    <li><a href="news_release">{{ my_news.title }}</a><em class="review">审核中</em><span>{{ my_news.create_time }}</span></li>
+                    <li><a href="#">{{ my_news.title }}</a><em class="review">审核中</em><span>{{ my_news.create_time }}</span></li>
 
                 {% else %}
                     <li>
-                <a href="news_release">{{ my_news.title }}</a>
+                <a href="#">{{ my_news.title }}</a>
                 <em class="nopass">未通过</em>
                 <span>{{ my_news.create_time }}</span>
                 <b>{{ my_news.reason }}</b>
@@ -45,7 +45,7 @@
 {#            </li>#}
 
         </ul>
-        <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="/user/news_list"></div>
+        <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="{{ url_for("user.news_list") }}"></div>
     </div>
 </body>
 </html>
