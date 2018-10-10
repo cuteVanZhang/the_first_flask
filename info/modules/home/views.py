@@ -36,7 +36,7 @@ def index():
         categories = []
     categories = [category.to_dict() for category in categories]
 
-    return render_template('index.html', user=user, news_list=news_list, categories=categories)
+    return render_template('news/index.html', user=user, news_list=news_list, categories=categories)
 
 
 # 获取新闻列表

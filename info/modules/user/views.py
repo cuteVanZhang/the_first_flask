@@ -16,7 +16,7 @@ def user_info():
     if not user:
         return redirect(url_for("home.index"))
 
-    return render_template("user.html", user=user.to_dict())
+    return render_template("news/user.html", user=user.to_dict())
 
 
 # 基本资料
@@ -28,7 +28,7 @@ def base_info():
         return abort(403)
 
     if request.method == "GET":
-        return render_template("user_base_info.html", user=user.to_dict())
+        return render_template("news/user_base_info.html", user=user.to_dict())
 
     # 点击保存，提交post请求
     # 获取校验参数
@@ -70,7 +70,7 @@ def pic_info():
         return abort(403)
 
     if request.method == "GET":
-        return render_template("user_pic_info.html", user=user.to_dict())
+        return render_template("news/user_pic_info.html", user=user.to_dict())
 
     # 点击保存，提交post请求
     # 获取校验参数
@@ -99,7 +99,7 @@ def pass_info():
         return abort(403)
 
     if request.method == "GET":
-        return render_template("user_pass_info.html")
+        return render_template("news/user_pass_info.html")
 
     # 点击保存，提交post请求
     # 获取校验参数
@@ -140,7 +140,7 @@ def news_release():
     cates = [cate.to_dict() for cate in cates if cate.id != 1]
 
     if request.method == "GET":
-        return render_template("user_news_release.html", cates=cates)
+        return render_template("news/user_news_release.html", cates=cates)
 
     # 获取校验参数
     title = request.form.get("title")
@@ -225,7 +225,7 @@ def collection():
         "total_page": total_page
     }
 
-    return render_template("user_collection.html", data=data)
+    return render_template("news/user_collection.html", data=data)
 
 
 # 我的发布
@@ -264,4 +264,4 @@ def news_list():
         "total_page": total_page
     }
 
-    return render_template("user_news_list.html", data=data)
+    return render_template("news/user_news_list.html", data=data)

@@ -12,7 +12,7 @@ def index_convert(index):
 
 def status_convert(status):
     # 0代表审核通过，1代表审核中，-1代表审核不通过
-    status_dic = {0: "已通过", 1: "未审核", 2: "未通过"}
+    status_dic = {0: "已通过", 1: "未审核", -1: "未通过"}
     return status_dic.get(status, "1")
 
 

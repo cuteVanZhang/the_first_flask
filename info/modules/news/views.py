@@ -77,7 +77,7 @@ def get_news_detail(news_id):
         comment_list.append(comment_dict)
 
     # 模板渲染返回
-    return render_template("detail.html", news=news.to_dict(), news_list=news_list, user=user,
+    return render_template("news/detail.html", news=news.to_dict(), news_list=news_list, user=user,
                            is_collected=is_collected, comment_list=comment_list)
 
 
