@@ -57,8 +57,9 @@ def creat_app(config_type):
     # from .modes import *
     import info.modes
 
-    from info.common import index_convert
+    from info.common import index_convert, status_convert
     app.add_template_filter(index_convert, "index_convert")
+    app.add_template_filter(status_convert, "status_convert")
 
     # 处理404异常
     from info.common import user_login_data

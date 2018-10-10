@@ -10,6 +10,12 @@ def index_convert(index):
     return index_dict.get(index, "")
 
 
+def status_convert(status):
+    # 0代表审核通过，1代表审核中，-1代表审核不通过
+    status_dic = {0: "已通过", 1: "未审核", 2: "未通过"}
+    return status_dic.get(status, "1")
+
+
 def user_login_data(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

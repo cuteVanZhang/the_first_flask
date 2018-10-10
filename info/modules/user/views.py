@@ -213,7 +213,7 @@ def collection():
         # 数据库异常时使用的默认值
         collection_news_list = []
         cur_page = 1
-        total_page = 3
+        total_page = 1
     else:
         collection_news_list = [collection_news.to_dict() for collection_news in pn.items]
         cur_page = pn.page
@@ -252,7 +252,7 @@ def news_list():
         current_app.logger.error(e)
         my_news_list = []
         cur_page = 1
-        total_page = 3
+        total_page = 1
     else:
         my_news_list = [my_new.to_review_dict() for my_new in my_news.items]
         cur_page = my_news.page
