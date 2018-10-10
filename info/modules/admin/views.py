@@ -313,7 +313,7 @@ def news_edit_detail(news_id):
     return render_template("admin/news_edit_detail.html", news=news.to_dict(), cates=cates)
 
 
-# 提交审核
+# 提交编辑
 @admin_blu.route('/news_edit_detail', methods=["POST"])
 @user_login_data
 def news_edit_action():
@@ -326,7 +326,7 @@ def news_edit_action():
     title = request.form.get("title")
     category_id = request.form.get("category_id")
     digest = request.form.get("digest")
-    content = request.form.get("title")
+    content = request.form.get("content")
     news_id = request.form.get("news_id")
     index_image=request.files.get("index_image")
     if not all([title, news_id, category_id, digest, content]):
