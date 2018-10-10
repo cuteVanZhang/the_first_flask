@@ -17,47 +17,50 @@
 <div class="header_con">
     <div class="header">
         <a href="/" class="logo fl"><img src="../static/news/images/logo.png" alt="logo"></a>
-{% block cate %}
+        {% block cate %}
 
-{% endblock %}
-{% if user %}
-    <div class="user_login fr">
-        <img src="{% if user.avatar_url %}{{ user.avatar_url }}
+        {% endblock %}
+        {% if user %}
+            <div class="user_login fr">
+                <img src="{% if user.avatar_url %}{{ user.avatar_url }}
         {% else %}../static/news/images/person01.png{% endif %}" class="lgin_pic">
-        <a href="/user/user_info" id="nick_name">{{ user.nick_name }}</a>
-        <a href="javascript:;" onclick="logout()">退出</a>
-    </div>
-{% else %}
-    <div class="user_btns fr">
-        <a href="javascript:;" class="login_btn">登录</a> / <a href="javascript:;" class="register_btn">注册</a>
-    </div>
-{% endif %}
+                <a href="/user/user_info" id="nick_name">{{ user.nick_name }}</a>
+                <a href="javascript:;" onclick="logout()">退出</a>
+            </div>
+        {% else %}
+            <div class="user_btns fr">
+                <a href="javascript:;" class="login_btn">登录</a> / <a href="javascript:;" class="register_btn">注册</a>
+            </div>
+        {% endif %}
 
-</div>
+    </div>
 </div>
 <div class="conter_con">
-{% block content %}
+    {% block content %}
 
-{% endblock %}
+    {% endblock %}
 
-{% block author_card %}
+    {% block author_card %}
 
-{% endblock %}
+    {% endblock %}
 
-{% block rank %}
-    <div class="rank_con fr">
-        <div class="rank_title">
-            <h3>点击排行</h3>
+    {% block rank %}
+        <div class="rank_con fr">
+            <div class="rank_title">
+                <h3>点击排行</h3>
+            </div>
+            <ul class="rank_list">
+                {% for news in news_list %}
+                    <li><span class={{ loop.index | index_convert }}>{{ loop.index }}</span><a
+                            href="/news/{{ news.id }}">{{ news.title }}</a></li>
+                {% endfor %}
+            </ul>
         </div>
-        <ul class="rank_list">
-            {% for news in news_list %}
-                <li><span class={{ loop.index | index_convert }}>{{ loop.index }}</span><a href="/news/{{ news.id }}">{{ news.title }}</a></li>
-            {% endfor %}
-        </ul>
-    </div>
-{% endblock %}
+    {% endblock %}
 
 </div>
+
+{% block bottom %}
 <div class="footer">
     <div class="footer_links">
         <a href="">关于我们</a>
@@ -73,6 +76,7 @@
         电话：010-****888 京ICP备*******8号
     </p>
 </div>
+{% endblock %}
 <!-- 登录表单 -->
 <form class="login_form_con">
     <div class="login_form">
@@ -81,7 +85,7 @@
             <a href="javascript:;" class="shutoff"></a>
         </div>
         <div class="form_group">
-{#            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">#}
+            {#            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">#}
             <input id="mobile" type="text" name="mobile" autocomplete="off">
             <div class="input_tip">手机号</div>
             <div id="login-mobile-err" class="error_tip">手机号不能为空</div>
@@ -104,7 +108,7 @@
             <a href="javascript:;" class="shutoff"></a>
         </div>
         <div class="form_group">
-{#            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">#}
+            {#            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">#}
             <input type="text" name="mobile" autocomplete="off" id="register_mobile" class="phone_input">
             <div class="input_tip">手机号</div>
             <div id="register-mobile-err" class="error_tip">手机号不能为空</div>

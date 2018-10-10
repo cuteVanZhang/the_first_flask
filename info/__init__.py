@@ -1,7 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask
+from flask import Flask, g, render_template
 from flask_migrate import Migrate
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
@@ -53,10 +53,20 @@ def creat_app(config_type):
     app.register_blueprint(admin_blu)
 
     setup_log(config_class.LOG_LEVEL)
+
     # from .modes import *
     import info.modes
 
     from info.common import index_convert
     app.add_template_filter(index_convert, "index_convert")
+
+    # 处理404异常
+    from info.common import user_login_data
+    @app.errorhandler(404)
+    @user_login_data
+    def handler_404(error):
+        user = g.user
+        user = user.to_dict() if user else None
+        return render_template("404.html", user=user)
 
     return app
