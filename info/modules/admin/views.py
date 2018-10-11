@@ -4,7 +4,7 @@ import time
 from flask import render_template, g, redirect, url_for, request, jsonify, current_app, session, abort
 
 from info import db
-from info.common import user_login_data, img_upload
+from info.common import img_upload
 from info.constants import ADMIN_USER_PAGE_MAX_COUNT, ADMIN_NEWS_PAGE_MAX_COUNT, QINIU_DOMIN_PREFIX
 from info.modes import User, News, Category
 from info.modules.admin import admin_blu
@@ -14,7 +14,6 @@ from info.utils.response_code import RET, error_map
 
 # 登录
 @admin_blu.route('/login', methods=["POST", "GET"])
-@user_login_data
 def login():
     user = g.user
     if user and user.is_admin == 1:
@@ -58,26 +57,14 @@ def logout():
 
 # 主页
 @admin_blu.route('/index')
-@user_login_data
 def index():
-    user = g.user
 
-    # 未登录跳转登录界面
-    if not (user and user.is_admin == 1):
-        return redirect(url_for("admin.login"))
-
-    return render_template("admin/admin_index.html", user=user.to_dict())
+    return render_template("admin/admin_index.html", user=g.user.to_dict())
 
 
 # 用户统计
 @admin_blu.route('/user_count')
-@user_login_data
 def user_count():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     # 用户总数
     try:
@@ -132,13 +119,7 @@ def user_count():
 
 # 用户列表
 @admin_blu.route('/user_list')
-@user_login_data
 def user_list():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     # 分页显示用户列表
     # 获取校验参数
@@ -174,13 +155,7 @@ def user_list():
 
 # 新闻审核
 @admin_blu.route('/news_review')
-@user_login_data
 def news_review():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     # 分页显示用户列表
     # 获取校验参数
@@ -221,13 +196,7 @@ def news_review():
 
 # 新闻审核详情页
 @admin_blu.route('/news_review_detail/<int:news_id>')
-@user_login_data
 def news_review_detail(news_id):
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     try:
         news = News.query.get(news_id)
@@ -250,13 +219,7 @@ def news_review_detail(news_id):
 
 # 提交审核
 @admin_blu.route('/news_review_action', methods=["POST"])
-@user_login_data
 def news_review_action():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     action = request.json.get("action")
     news_id = request.json.get("news_id")
@@ -293,13 +256,7 @@ def news_review_action():
 
 # 新闻版式编辑
 @admin_blu.route('/news_edit')
-@user_login_data
 def news_edit():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     # 分页显示用户列表
     # 获取校验参数
@@ -339,12 +296,7 @@ def news_edit():
 
 # 新闻版式详情页
 @admin_blu.route('/news_edit_detail/<int:news_id>')
-@user_login_data
 def news_edit_detail(news_id):
-    user = g.user
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     try:
         news = News.query.get(news_id)
@@ -367,13 +319,7 @@ def news_edit_detail(news_id):
 
 # 提交编辑
 @admin_blu.route('/news_edit_detail', methods=["POST"])
-@user_login_data
 def news_edit_action():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     title = request.form.get("title")
     category_id = request.form.get("category_id")
@@ -429,13 +375,7 @@ def news_edit_action():
 
 # 新闻分类管理
 @admin_blu.route('/news_type', methods=["GET", "POST"])
-@user_login_data
 def news_type():
-    user = g.user
-
-    # 未登录拒绝访问
-    if not (user and user.is_admin == 1):
-        return abort(403)
 
     # 获取分类
     try:
