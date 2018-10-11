@@ -79,7 +79,7 @@ class User(BaseModel, db.Model):
             "gender": self.gender if self.gender else "MAN",
             "signature": self.signature if self.signature else "",
             "followers_count": self.followers.count(),
-            "news_count": self.news_list.count()
+            "news_count": self.news_list.count(),
         }
         return resp_dict
 

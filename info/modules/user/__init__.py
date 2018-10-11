@@ -12,8 +12,7 @@ def check_login():
     if not user:
         if request.url.endswith("user/user_info"):
             return redirect(url_for("home.index"))
-        else:
+        elif "user/other/" not in request.url:
             return abort(403)
-
 
 from .views import *

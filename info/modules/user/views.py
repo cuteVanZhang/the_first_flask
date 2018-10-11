@@ -12,14 +12,12 @@ from info.utils.response_code import RET, error_map
 # 个人中心主页
 @user_blu.route('/user_info')
 def user_info():
-
     return render_template("news/user.html", user=g.user.to_dict())
 
 
 # 基本资料
 @user_blu.route('/base_info', methods=["POST", "GET"])
 def base_info():
-
     user = g.user
 
     if request.method == "GET":
@@ -59,7 +57,6 @@ def base_info():
 # 头像设置
 @user_blu.route('/pic_info', methods=["POST", "GET"])
 def pic_info():
-
     user = g.user
 
     if request.method == "GET":
@@ -86,7 +83,6 @@ def pic_info():
 # 密码修改
 @user_blu.route('/pass_info', methods=["POST", "GET"])
 def pass_info():
-
     user = g.user
 
     if request.method == "GET":
@@ -117,7 +113,6 @@ def pass_info():
 # 新闻发布
 @user_blu.route('/news_release', methods=["POST", "GET"])
 def news_release():
-
     user = g.user
 
     # 获取分类
@@ -178,7 +173,6 @@ def news_release():
 # 我的收藏
 @user_blu.route('/collection')
 def collection():
-
     user = g.user
 
     # 获取校验参数
@@ -218,7 +212,6 @@ def collection():
 # 我的发布
 @user_blu.route('/news_list')
 def news_list():
-
     user = g.user
 
     # 获取校验参数
@@ -232,7 +225,8 @@ def news_list():
 
     # 查询我发布的新闻
     try:
-        my_news = News.query.filter_by(user_id=user.id).order_by(News.create_time.desc()).paginate(cp, OTHER_NEWS_PAGE_MAX_COUNT)
+        my_news = News.query.filter_by(user_id=user.id).order_by(News.create_time.desc()).paginate(cp,
+                                                                                                   OTHER_NEWS_PAGE_MAX_COUNT)
     except BaseException as e:
         current_app.logger.error(e)
         my_news_list = []
@@ -289,4 +283,49 @@ def user_follow():
 
 @user_blu.route('/other/<int:user_id>')
 def other(user_id):
-    return render_template("news/other.html")
+    try:
+        author = User.query.get(user_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return abort("403")
+
+    if not author:
+        return abort("404")
+
+    user = g.user
+    is_followed = False
+    if user and (author in user.followed):
+        is_followed = True
+
+    cp = request.args.get("p", 1)
+
+    try:
+        cp = int(cp)
+    except BaseException as e:
+        current_app.logger.error(e)
+        cp = 1
+
+    # 查询我发布的新闻
+    try:
+        author_news_pn = author.news_list.filter(News.status == 0).order_by(News.create_time.desc()).paginate(cp,
+                                                                                                              OTHER_NEWS_PAGE_MAX_COUNT)
+    except BaseException as e:
+        current_app.logger.error(e)
+        news_list = []
+        cur_page = 1
+        total_page = 1
+    else:
+        news_list = [news.to_basic_dict() for news in author_news_pn.items]
+        cur_page = author_news_pn.page
+        total_page = author_news_pn.pages
+
+    data = {
+        "news_list": news_list,
+        "cur_page": cur_page,
+        "total_page": total_page,
+        "is_followed": is_followed
+    }
+
+    user = user.to_dict() if user else None
+
+    return render_template("news/other.html", author=author.to_dict(), user=user, data=data)
