@@ -58,18 +58,17 @@ def logout():
 # 主页
 @admin_blu.route('/index')
 def index():
-
     return render_template("admin/admin_index.html", user=g.user.to_dict())
 
 
 # 用户统计
 @admin_blu.route('/user_count')
 def user_count():
-
     # 用户总数
     try:
         users_count = User.query.filter(User.is_admin == False).count()
     except BaseException as e:
+        current_app.logger.error(e)
         users_count = "**数**据**库**异**常**"
 
     ct = time.localtime()
@@ -81,14 +80,16 @@ def user_count():
 
     # 月新增
     try:
-        mon_add_user = User.query.filter(User.create_time > mon_1).count()
+        mon_add_user = User.query.filter(User.is_admin == False, User.create_time >= mon_1).count()
     except BaseException as e:
+        current_app.logger.error(e)
         mon_add_user = "**数**据**库**异**常**"
 
     # 日新增
     try:
-        day_add_user = User.query.filter(User.create_time > today_0).count()
+        day_add_user = User.query.filter(User.is_admin == False, User.create_time >= today_0).count()
     except BaseException as e:
+        current_app.logger.error(e)
         day_add_user = "**数**据**库**异**常**"
 
     # 数据列表
@@ -99,8 +100,9 @@ def user_count():
         b_day = today_0 - datetime.timedelta(days=i)
         f_day = b_day + datetime.timedelta(days=1)
         try:
-            everyday_add = User.query.filter(User.create_time >= b_day, User.create_time < f_day).count()
+            everyday_add = User.query.filter(User.is_admin == False, User.create_time >= b_day, User.create_time < f_day).count()
         except BaseException as e:
+            current_app.logger.error(e)
             everyday_add = 9999999
         everyday_date = b_day.strftime("%Y-%m-%d")
         time_list.append(everyday_date)
@@ -120,7 +122,6 @@ def user_count():
 # 用户列表
 @admin_blu.route('/user_list')
 def user_list():
-
     # 分页显示用户列表
     # 获取校验参数
     cp = request.args.get("p", 1)
@@ -133,7 +134,7 @@ def user_list():
 
     # 查询我发布的新闻
     try:
-        all_user = User.query.paginate(cp, ADMIN_USER_PAGE_MAX_COUNT)
+        all_user = User.query.filter(User.is_admin == False).paginate(cp, ADMIN_USER_PAGE_MAX_COUNT)
     except BaseException as e:
         current_app.logger.error(e)
         user_list = []
@@ -156,7 +157,6 @@ def user_list():
 # 新闻审核
 @admin_blu.route('/news_review')
 def news_review():
-
     # 分页显示用户列表
     # 获取校验参数
     cp = request.args.get("p", 1)
@@ -197,7 +197,6 @@ def news_review():
 # 新闻审核详情页
 @admin_blu.route('/news_review_detail/<int:news_id>')
 def news_review_detail(news_id):
-
     try:
         news = News.query.get(news_id)
     except BaseException as e:
@@ -207,20 +206,12 @@ def news_review_detail(news_id):
     if not news:
         return abort(404)
 
-    # try:
-    #     cates = Category.query.filter(Category.id != 1).all()
-    # except BaseException as e:
-    #     current_app.logger.error(e)
-    #     cates = []
-    # cates = [cate.to_dict() for cate in cates]
-
     return render_template("admin/admin_news_review_detail.html", news=news.to_dict())
 
 
 # 提交审核
 @admin_blu.route('/news_review_action', methods=["POST"])
 def news_review_action():
-
     action = request.json.get("action")
     news_id = request.json.get("news_id")
     reason = request.json.get("reason")
@@ -249,6 +240,7 @@ def news_review_action():
         news.status = 0
     else:
         news.status = -1
+        # 前端已做处理，必有resaon
         news.reason = reason
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
@@ -257,7 +249,6 @@ def news_review_action():
 # 新闻版式编辑
 @admin_blu.route('/news_edit')
 def news_edit():
-
     # 分页显示用户列表
     # 获取校验参数
     cp = request.args.get("p", 1)
@@ -297,7 +288,6 @@ def news_edit():
 # 新闻版式详情页
 @admin_blu.route('/news_edit_detail/<int:news_id>')
 def news_edit_detail(news_id):
-
     try:
         news = News.query.get(news_id)
     except BaseException as e:
@@ -320,7 +310,6 @@ def news_edit_detail(news_id):
 # 提交编辑
 @admin_blu.route('/news_edit_detail', methods=["POST"])
 def news_edit_action():
-
     title = request.form.get("title")
     category_id = request.form.get("category_id")
     digest = request.form.get("digest")
@@ -376,7 +365,6 @@ def news_edit_action():
 # 新闻分类管理
 @admin_blu.route('/news_type', methods=["GET", "POST"])
 def news_type():
-
     # 获取分类
     try:
         cates = Category.query.order_by(Category.id).all()

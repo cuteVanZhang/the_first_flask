@@ -281,6 +281,7 @@ def user_follow():
     return render_template("news/user_follow.html", data=data)
 
 
+# 个人空间主页
 @user_blu.route('/other/<int:user_id>')
 def other(user_id):
     try:
