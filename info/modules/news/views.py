@@ -33,11 +33,11 @@ def get_news_detail(news_id):
         news_list = []
     news_list = [news.to_basic_dict() for news in news_list]
 
-    # 是否收藏该新闻
-    is_collected = False
-
     # 判断登录状态，渲染页面
     user = g.user
+
+    # 是否收藏该新闻
+    is_collected = False
 
     if user:
         try:
@@ -47,7 +47,11 @@ def get_news_detail(news_id):
         else:
             is_collected = True if news_id in user_collect_list else False
 
-    user = user.to_dict() if user else None
+    # 是否关注作者
+    is_followed = False
+
+    if user and (news.user in user.followed):
+        is_followed = True
 
     # 获取评论列表
     try:
@@ -57,15 +61,14 @@ def get_news_detail(news_id):
         jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     # 获取用户评论列表
+    user_comment_list = []
     if user:
         try:
-            user_comment_list = CommentLike.query.filter(CommentLike.user_id == user.get("id")).all()
+            user_comment_list = CommentLike.query.filter(CommentLike.user_id == user.id).all()
             user_comment_list = [commentlike.comment_id for commentlike in user_comment_list]
         except BaseException as e:
             current_app.logger.error(e)
             jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
-    else:
-        user_comment_list = []
 
     comment_list = []
     for comment in comments:
@@ -76,9 +79,11 @@ def get_news_detail(news_id):
         comment_dict["is_like"] = is_like
         comment_list.append(comment_dict)
 
+    user = user.to_dict() if user else None
+
     # 模板渲染返回
     return render_template("news/detail.html", news=news.to_dict(), news_list=news_list, user=user,
-                           is_collected=is_collected, comment_list=comment_list)
+                           is_collected=is_collected, comment_list=comment_list, is_followed=is_followed)
 
 
 # 新闻收藏
@@ -253,3 +258,49 @@ def comment_like():
         return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+
+
+# 关注
+@news_blu.route('/followed_user', methods=["POST"])
+@user_login_data
+def followed_user():
+
+    # 获取用户状态/详情，未登录跳转到登录界面
+    user = g.user
+
+    if not user:
+        return jsonify(errno=RET.SESSIONERR, errmsg=error_map[RET.SESSIONERR])
+
+    # 获取校验参数
+    user_id = request.json.get("user_id")
+    action = request.json.get("action")
+    if not all([user_id, action]):
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # int转换
+    try:
+        user_id = int(user_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    # 获取新闻对象
+    try:
+        author = User.query.get(user_id)
+    except BaseException as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    if not author:
+        return jsonify(errno=RET.DBERR, errmsg=error_map[RET.DBERR])
+
+    # 修改数据库数据
+    if action == "follow":
+        user.followed.append(author)
+    elif action == "unfollow":
+        user.followed.remove(author)
+    else:
+        return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
+
+    return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
+

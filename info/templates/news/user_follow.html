@@ -16,44 +16,19 @@
 <body class="inframe_body">
     <h3 class="common_title">我的关注</h3>
     <ul class="card_list_con">
-        <li class="author_card card_list">
-            <a href="/user/other?user_id=1" target="_blank" class="author_pic"><img src="../../static/news/images/cat.jpg" alt="author_pic"></a>
-            <a href="/user/other?user_id=1" target="_blank" class="author_name">张大山</a>
-            <div class="author_resume">张大山的简介,张大山</div>
-            <div class="writings"><span>总篇数</span><b>23</b></div>
-            <div class="follows"><span>粉丝</span><b>36</b></div>
-            <a href="javascript:;" class="focus fr">关注</a>
-            <a href="javascript:;" class="focused fr"><span class="out">已关注</span><span class="over">取消关注</span></a>
-        </li>
-                <li class="author_card card_list">
-            <a href="/user/other?user_id=1" target="_blank" class="author_pic"><img src="../../static/news/images/cat.jpg" alt="author_pic"></a>
-            <a href="/user/other?user_id=1" target="_blank" class="author_name">张大山</a>
-            <div class="author_resume">张大山的简介,张大山</div>
-            <div class="writings"><span>总篇数</span><b>23</b></div>
-            <div class="follows"><span>粉丝</span><b>36</b></div>
-            <a href="javascript:;" class="focus fr">关注</a>
-            <a href="javascript:;" class="focused fr"><span class="out">已关注</span><span class="over">取消关注</span></a>
-        </li>
-        <li class="author_card card_list">
-            <a href="/user/other?user_id=1" target="_blank" class="author_pic"><img src="../../static/news/images/cat.jpg" alt="author_pic"></a>
-            <a href="/user/other?user_id=1" target="_blank" class="author_name">张大山</a>
-            <div class="author_resume">张大山的简介,张大山</div>
-            <div class="writings"><span>总篇数</span><b>23</b></div>
-            <div class="follows"><span>粉丝</span><b>36</b></div>
-            <a href="javascript:;" class="focus fr">关注</a>
-            <a href="javascript:;" class="focused fr"><span class="out">已关注</span><span class="over">取消关注</span></a>
-        </li>
-        <li class="author_card card_list">
-            <a href="/user/other?user_id=1" target="_blank" class="author_pic"><img src="../../static/news/images/cat.jpg" alt="author_pic"></a>
-            <a href="/user/other?user_id=1" target="_blank" class="author_name">张大山</a>
-            <div class="author_resume">张大山的简介,张大山</div>
-            <div class="writings"><span>总篇数</span><b>23</b></div>
-            <div class="follows"><span>粉丝</span><b>36</b></div>
-            <a href="javascript:;" class="focus fr">关注</a>
-            <a href="javascript:;" class="focused fr"><span class="out">已关注</span><span class="over">取消关注</span></a>
-        </li>
+        {% for author in data.followed_authors %}
+            <li class="author_card card_list">
+                <a href="{{ url_for("user.other", user_id=author.id) }}" target="_blank" class="author_pic"><img src="{% if author.avatar_url %}{{ author.avatar_url }}{% else %}../../static/news/images/person01.png{% endif %}" alt="author_pic"></a>
+                <a href="{{ url_for("user.other", user_id=author.id) }}" target="_blank" class="author_name">{{ author.nick_name }}</a>
+                <div class="author_resume">{{ author.nick_name }}的简介,{{ author.nick_name }}</div>
+                <div class="writings"><span>总篇数</span><b>{{ author.news_count }}</b></div>
+                <div class="follows"><span>粉丝</span><b>{{ author.followers_count }}</b></div>
+                <a href="javascript:;" class="focus fr" data-userid="{{ author.id }}" style="display: none">关注</a>
+                <a href="javascript:;" class="focused fr" data-userid="{{ author.id }}" style="display: block"><span class="out">已关注</span><span class="over">取消关注</span></a>
+            </li>
+        {% endfor %}
     </ul>
-    <div id="pagination" class="page" cur_page="1" total_page="1" source="/user/user_follow"></div>
+    <div id="pagination" class="page" cur_page="{{ data.cur_page }}" total_page="{{ data.total_page }}" source="{{ url_for("user.user_follow") }}"></div>
 </body>
 
 </html>

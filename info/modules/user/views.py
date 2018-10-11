@@ -2,7 +2,8 @@ from flask import render_template, g, jsonify, redirect, url_for, request, curre
 
 from info import db
 from info.common import user_login_data, img_upload
-from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT, QINIU_DOMIN_PREFIX
+from info.constants import USER_COLLECTION_MAX_NEWS, OTHER_NEWS_PAGE_MAX_COUNT, QINIU_DOMIN_PREFIX, \
+    USER_FOLLOWED_MAX_COUNT
 from info.modes import User, Category, News, tb_user_collection
 from info.modules.user import user_blu
 from info.utils.response_code import RET, error_map
@@ -254,5 +255,38 @@ def news_list():
 # 我的关注
 @user_blu.route('/user_follow')
 def user_follow():
+    user = g.user
 
-    return render_template("news/user_follow.html")
+    cp = request.args.get("p", 1)
+
+    try:
+        cp = int(cp)
+    except BaseException as e:
+        current_app.logger.error(e)
+        cp = 1  # 异常是给cp设置为1 则不会应用整体运行
+
+    try:
+        pn = user.followed.paginate(cp, USER_FOLLOWED_MAX_COUNT)
+    except BaseException as e:
+        current_app.logger.error(e)
+        # 数据库异常时使用的默认值
+        followed_authors = []
+        cur_page = 1
+        total_page = 1
+    else:
+        followed_authors = [author.to_dict() for author in pn.items]
+        cur_page = pn.page
+        total_page = pn.pages
+
+    data = {
+        "followed_authors": followed_authors,
+        "cur_page": cur_page,
+        "total_page": total_page
+    }
+
+    return render_template("news/user_follow.html", data=data)
+
+
+@user_blu.route('/other/<int:user_id>')
+def other(user_id):
+    return render_template("news/other.html")
