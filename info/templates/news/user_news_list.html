@@ -3,12 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<title>用户中心</title>
-	<link rel="stylesheet" type="text/css" href="../static/news/css/reset.css">
-	<link rel="stylesheet" type="text/css" href="../static/news/css/jquery.pagination.css">
-    <link rel="stylesheet" type="text/css" href="../static/news/css/main.css">
-    <script type="text/javascript" src="../static/news/js/jquery-1.12.4.min.js"></script>
-	<script type="text/javascript" src="../static/news/js/jquery.pagination.min.js"></script>
-    <script type="text/javascript" src="../static/news/js/page_control.js"></script>
+	<link rel="stylesheet" type="text/css" href="../../static/news/css/reset.css">
+	<link rel="stylesheet" type="text/css" href="../../static/news/css/jquery.pagination.css">
+    <link rel="stylesheet" type="text/css" href="../../static/news/css/main.css">
+    <script type="text/javascript" src="../../static/news/js/jquery-1.12.4.min.js"></script>
+	<script type="text/javascript" src="../../static/news/js/jquery.pagination.min.js"></script>
+    <script type="text/javascript" src="../../static/news/js/page_control.js"></script>
 </head>
 <body class="inframe_body">
     <div class="news_list">
@@ -17,7 +17,7 @@
             {% for my_news in data.my_news_list %}
 
                 {% if my_news.status==0 %}
-                    <li><a href="#">{{ my_news.title }}</a><em class="pass">已通过</em><span>{{ my_news.create_time }}</span></li>
+                    <li><a href="{{ url_for("news.get_news_detail", news_id=my_news.id) }}" target="_blank">{{ my_news.title }}</a><em class="pass">已通过</em><span>{{ my_news.create_time }}</span></li>
 
                 {% elif my_news.status==1 %}
                     <li><a href="#">{{ my_news.title }}</a><em class="review">审核中</em><span>{{ my_news.create_time }}</span></li>

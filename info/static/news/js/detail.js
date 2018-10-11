@@ -218,7 +218,7 @@ $(function() {
                         if (comment.user.avatar_url) {
                             comment_html += '<img src="' + comment.user.avatar_url + '" alt="用户图标">'
                         } else {
-                            comment_html += '<img src="../../static/news/images/worm.jpg" alt="用户图标">'
+                            comment_html += '<img src="../../static/news/images/person01.png" alt="用户图标">'
                         }
                         comment_html += '</div>'
                         comment_html += '<div class="user_name fl">' + comment.user.nick_name + '</div>'
