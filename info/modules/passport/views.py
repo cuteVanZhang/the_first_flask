@@ -194,6 +194,7 @@ def login():
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
 
 
+# 退出
 @passport_blu.route('/logout')
 def logout():
 

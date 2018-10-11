@@ -10,22 +10,16 @@ from info.utils.response_code import RET, error_map
 
 # 个人中心主页
 @user_blu.route('/user_info')
-@user_login_data
 def user_info():
-    user = g.user
-    if not user:
-        return redirect(url_for("home.index"))
 
-    return render_template("news/user.html", user=user.to_dict())
+    return render_template("news/user.html", user=g.user.to_dict())
 
 
 # 基本资料
 @user_blu.route('/base_info', methods=["POST", "GET"])
-@user_login_data
 def base_info():
+
     user = g.user
-    if not user:
-        return abort(403)
 
     if request.method == "GET":
         return render_template("news/user_base_info.html", user=user.to_dict())
@@ -63,11 +57,9 @@ def base_info():
 
 # 头像设置
 @user_blu.route('/pic_info', methods=["POST", "GET"])
-@user_login_data
 def pic_info():
+
     user = g.user
-    if not user:
-        return abort(403)
 
     if request.method == "GET":
         return render_template("news/user_pic_info.html", user=user.to_dict())
@@ -92,11 +84,9 @@ def pic_info():
 
 # 密码修改
 @user_blu.route('/pass_info', methods=["POST", "GET"])
-@user_login_data
 def pass_info():
+
     user = g.user
-    if not user:
-        return abort(403)
 
     if request.method == "GET":
         return render_template("news/user_pass_info.html")
@@ -125,11 +115,9 @@ def pass_info():
 
 # 新闻发布
 @user_blu.route('/news_release', methods=["POST", "GET"])
-@user_login_data
 def news_release():
+
     user = g.user
-    if not user:
-        return abort(403)
 
     # 获取分类
     try:
@@ -188,11 +176,9 @@ def news_release():
 
 # 我的收藏
 @user_blu.route('/collection')
-@user_login_data
 def collection():
+
     user = g.user
-    if not user:
-        return abort(403)
 
     # 获取校验参数
     # cp = request.args.get("p")
@@ -230,11 +216,9 @@ def collection():
 
 # 我的发布
 @user_blu.route('/news_list')
-@user_login_data
 def news_list():
+
     user = g.user
-    if not user:
-        return redirect(url_for("home.index"))
 
     # 获取校验参数
     cp = request.args.get("p", 1)
@@ -265,3 +249,10 @@ def news_list():
     }
 
     return render_template("news/user_news_list.html", data=data)
+
+
+# 我的关注
+@user_blu.route('/user_follow')
+def user_follow():
+
+    return render_template("news/user_follow.html")
