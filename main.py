@@ -1,3 +1,6 @@
+import random
+import datetime
+
 from flask import current_app
 from flask_script import Manager
 from flask_migrate import MigrateCommand
@@ -20,7 +23,7 @@ def create_superuser(username, pwd):
     from info.modes import User
     from info import db
     try:
-        user = User.query.filter(User.mobile==username).first()
+        user = User.query.filter(User.mobile == username).first()
     except BaseException as e:
         current_app.logger.error(e)
         print("数据库异常")
@@ -47,8 +50,34 @@ def create_superuser(username, pwd):
     print("管理员创建成功")
 
 
+def create_test_user_data():
+    '''
+    创建用户账号测试数据
+    '''
+    from info.modes import User
+    from info import db
+    user_list = []
+    for num in range(0, 10000):
+        user = User()
+        user.nick_name = "%06d" % num
+        user.mobile = "%06d" % num
+        user.password_hash = "pbkdf2:sha256:50000$1P6xtqPy$977d8a4faa9df97d180bdeac80cd1ffeecd018f92dada894399f72d259e69ed2"
+        user.create_time = datetime.datetime.now() - datetime.timedelta(seconds=random.randint(0, 2678400))
+        user_list.append(user)
+        print(user.mobile)
+    try:
+        db.session.add_all(user_list)
+        db.session.commit()
+    except BaseException as e:
+        db.session.rollback()
+        print(e)
+
+    print("OK")
+
+
 if __name__ == '__main__':
     # print(app.url_map)
     # print(app.url_map.converters)
     # print(app.template_filter)
+    # create_test_user_data()
     mgr.run()

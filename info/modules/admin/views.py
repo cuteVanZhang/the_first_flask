@@ -1,3 +1,6 @@
+import datetime
+import time
+
 from flask import render_template, g, redirect, url_for, request, jsonify, current_app, session, abort
 
 from info import db
@@ -76,7 +79,55 @@ def user_count():
     if not (user and user.is_admin == 1):
         return abort(403)
 
-    return render_template("admin/admin_user_count.html")
+    # 用户总数
+    try:
+        users_count = User.query.filter(User.is_admin == False).count()
+    except BaseException as e:
+        users_count = "**数**据**库**异**常**"
+
+    ct = time.localtime()
+    mon_one_day = "%d-%02d-01" % (ct.tm_year, ct.tm_mon)
+    mon_1 = datetime.datetime.strptime(mon_one_day, "%Y-%m-%d")
+
+    today = "%d-%02d-%02d" % (ct.tm_year, ct.tm_mon, ct.tm_mday)
+    today_0 = datetime.datetime.strptime(today, "%Y-%m-%d")
+
+    # 月新增
+    try:
+        mon_add_user = User.query.filter(User.create_time > mon_1).count()
+    except BaseException as e:
+        mon_add_user = "**数**据**库**异**常**"
+
+    # 日新增
+    try:
+        day_add_user = User.query.filter(User.create_time > today_0).count()
+    except BaseException as e:
+        day_add_user = "**数**据**库**异**常**"
+
+    # 数据列表
+    time_list = []
+    data_list = []
+
+    for i in range(30):
+        b_day = today_0 - datetime.timedelta(days=i)
+        f_day = b_day + datetime.timedelta(days=1)
+        try:
+            everyday_add = User.query.filter(User.create_time >= b_day, User.create_time < f_day).count()
+        except BaseException as e:
+            everyday_add = 9999999
+        everyday_date = b_day.strftime("%Y-%m-%d")
+        time_list.append(everyday_date)
+        data_list.append(everyday_add)
+
+    data = {
+        "users_count": users_count,
+        "mon_add_user": mon_add_user,
+        "day_add_user": day_add_user,
+        "time_list": time_list[::-1],
+        "data_list": data_list[::-1]
+    }
+
+    return render_template("admin/admin_user_count.html", date=data)
 
 
 # 用户列表
@@ -147,7 +198,8 @@ def news_review():
         filter_list.append(News.title.contains(keywords))
     # 查询我发布的新闻
     try:
-        reveiw_news = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(cp, ADMIN_NEWS_PAGE_MAX_COUNT)
+        reveiw_news = News.query.filter(*filter_list).order_by(News.create_time.desc()).paginate(cp,
+                                                                                                 ADMIN_NEWS_PAGE_MAX_COUNT)
     except BaseException as e:
         current_app.logger.error(e)
         news_list = []
@@ -310,7 +362,7 @@ def news_edit_detail(news_id):
         cates = []
     cates = [cate.to_dict() for cate in cates]
 
-    return render_template("admin/news_edit_detail.html", news=news.to_dict(), cates=cates)
+    return render_template("admin/admin_news_edit_detail.html", news=news.to_dict(), cates=cates)
 
 
 # 提交编辑
@@ -328,7 +380,7 @@ def news_edit_action():
     digest = request.form.get("digest")
     content = request.form.get("content")
     news_id = request.form.get("news_id")
-    index_image=request.files.get("index_image")
+    index_image = request.files.get("index_image")
     if not all([title, news_id, category_id, digest, content]):
         return jsonify(errno=RET.PARAMERR, errmsg=error_map[RET.PARAMERR])
 
@@ -379,7 +431,6 @@ def news_edit_action():
 @admin_blu.route('/news_type', methods=["GET", "POST"])
 @user_login_data
 def news_type():
-
     user = g.user
 
     # 未登录拒绝访问
@@ -432,4 +483,3 @@ def news_type():
         db.session.add(new_cate)
 
     return jsonify(errno=RET.OK, errmsg=error_map[RET.OK])
-
