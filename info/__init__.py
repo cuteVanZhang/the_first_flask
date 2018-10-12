@@ -39,8 +39,6 @@ def creat_app(config_type):
     Session(app)
     Migrate(app, db)
 
-    # CSRFProtect(app)
-
     from .modules.home import home_blu
     app.register_blueprint(home_blu)
     from info.modules.passport import passport_blu
@@ -69,5 +67,7 @@ def creat_app(config_type):
         user = g.user
         user = user.to_dict() if user else None
         return render_template("news/404.html", user=user)
+
+    CSRFProtect(app)
 
     return app

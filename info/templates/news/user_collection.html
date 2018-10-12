@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 	<title>用户中心</title>
 	<link rel="stylesheet" type="text/css" href="../../static/news/css/reset.css">
     <link rel="stylesheet" type="text/css" href="../../static/news/css/jquery.pagination.css">
@@ -9,6 +10,7 @@
     <script type="text/javascript" src="../../static/news/js/jquery-1.12.4.min.js"></script>
 	<script type="text/javascript" src="../../static/news/js/jquery.pagination.min.js"></script>
     <script type="text/javascript" src="../../static/news/js/page_control.js"></script>
+    <script type="text/javascript" src="../../static/news/js/csrf.js"></script>
 </head>
 <body class="inframe_body">
     <div class="my_collect">

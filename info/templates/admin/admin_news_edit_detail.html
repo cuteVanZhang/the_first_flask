@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>新经资讯后台管理</title>
     <link rel="stylesheet" type="text/css" href="../../static/admin/css/reset.css">
     <link rel="stylesheet" type="text/css" href="../../static/admin/css/main.css">
@@ -11,6 +12,7 @@
     <script src="../../static/admin/tinymce/js/tinymce/tinymce.min.js"></script>
     <script src="../../static/admin/js/tinymce_setup.js"></script>
     <script src="../../static/admin/js/news_edit_detail.js"></script>
+    <script type="text/javascript" src="../../static/news/js/csrf.js"></script>
 </head>
 
 <body>
@@ -43,6 +45,7 @@
             <div class="form_group">
                 <label>上传图片：</label>
                 <input type="file" class="input_file" name="index_image">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             </div>
             <div class="form_group">
                 <label>新闻内容：</label>
